@@ -1,0 +1,342 @@
+# What the enemy of the Antagonist Combat System does, READ from its nodes (derived: the code spaces in generated.yaml map each one),
+# and what the chain needs that the code does not say (inferred: each `why` is the question for the Blueprint's author). `measure`
+# says where it shows; `effect` is what the converted code must hold, checked by tools/logic_map.py (EffectCheck) and planted the
+# other way. Where the author's own comment box around the graph says the same, `measure` quotes it (BP-EN-NOTES): a second source.
+requirements:
+  # setting up (UC-EN1)
+  - {id: EN-1, kind: derived, text: "When the enemy begins play it keeps three references, each only if the one before was found: the player's character as a BP_LearningKit_PlayerCharacter (Player_Character), its DamageIndicator widget as a DamageIndicator_UI (As_Damage_Indicator_UI) and its Healthbar_Widget as an AI_Healthbar (As_AI_Healthbar); a cast that fails ends the chain", measure: "cast GetPlayerCharacter(0) at ReceiveBeginPlay#s1, Player_Character <- it at #s2; cast DamageIndicator.GetWidget() at #s3, As_Damage_Indicator_UI <- it at #s4; cast Healthbar_Widget.GetWidget() at #s5, As_AI_Healthbar <- it at #s6. The author's note around it: 'Spawn in, start roaming'",
+     effect: [{branches: "BP_LearningKit_PlayerCharacter", at: "ReceiveBeginPlay#s1"},
+              {sets: "Player_Character", at: "ReceiveBeginPlay#s1:then"},
+              {sets: "As_Damage_Indicator_UI", at: "ReceiveBeginPlay#s3:then"},
+              {sets: "As_AI_Healthbar", at: "ReceiveBeginPlay#s5:then"}]}
+  - {id: EN-2, kind: derived, text: "Told to check for reincarnation, an enemy that is Reincarnated takes its stats from its EnemyInfo record (Set_Reincarnated_Stats) and a new one from the data table (Set_Stats); either way it then shows its Level on LevelText (the integer text conversion's defaults, KismetTextLibrary.h:240) and its Name on TextRender, walks at its Speed and keeps its mesh's material 1 as Material_1; only a new enemy then starts to roam", measure: "if Reincarnated at Check_For_Reincarnation#s1: Set_Reincarnated_Stats() at #s2, Set_Stats() at #s7; LevelText.K2_SetText(Conv_IntToText(Level)) at #s3 / #s8; MaxWalkSpeed <- Speed at #s4 / #s9; TextRender.K2_SetText(Name) at #s5 / #s10; Material_1 <- Mesh.GetMaterial(1) at #s6 / #s11; Random_Roam() at #s12 only. The author's note: 'Set up being play'",
+     effect: [{branches: "Reincarnated", at: "Check_For_Reincarnation#s1"},
+              {calls: "Set_Reincarnated_Stats", at: "Check_For_Reincarnation#s1:then"},
+              {calls: "Set_Stats", at: "Check_For_Reincarnation#s1:else"},
+              {sets: "MaxWalkSpeed", to: "Speed", at: "Check_For_Reincarnation#s4"},
+              {calls: "K2_SetText", args: ["Name"], at: "Check_For_Reincarnation#s5"},
+              {calls: "Random_Roam", at: "Check_For_Reincarnation#s1:else"}]}
+  - {id: EN-3, kind: derived, text: "A new enemy's stats are the row Boss_Enemy of the data table EnemyInfo_DT: its class (Out_Row_Class), Health, Max_Health, Damage, Speed, Level, Fire_Resistance, Max_Number_of_attacks, Fire_Resistant, Can_be_frozen, Can_War_Cry, Blackthumb, Toxic and its first two skills; SkeleMesh is its Mesh", measure: "the row read by K2Node_GetDataTableRow_0 at Set_Stats#s1 (DataTable /Game/SystemMenagerie/Characters/EnemyAI/Data/EnemyInfo_DT, RowName Boss_Enemy, both READ from its pins), one set per field at #s2-#s17. The author's note: 'Set stats based off of reincarnation or not'",
+     effect: [{sets: "Health", at: "Set_Stats#s4"},
+              {sets: "Max_Health", at: "Set_Stats#s5"},
+              {sets: "Max_Number_of_attacks", at: "Set_Stats#s10"},
+              {sets: "Can_be_frozen", at: "Set_Stats#s12"},
+              {sets: "Blackthumb", at: "Set_Stats#s14"},
+              {sets: "Toxic", at: "Set_Stats#s15"}]}
+  - {id: EN-4, kind: derived, text: "A reincarnated enemy takes its stats from its EnemyInfo record, one level up (the record's Level goes up by one and the enemy takes it), with Health and Max_Health a random 20 to 45 above the recorded health, and with its skills, its kill record and its SkillCounter as recorded", measure: "Out_Row_Class, Name, Damage, Speed and the flags <- EnemyInfo at Set_Reincarnated_Stats#s1-#s27; HealthIncreased <- RandomIntegerInRange(20, 45) at #s4 (inclusive: UnrealMathUtility.h:289-293); Health and Max_Health <- EnemyInfo.Health + HealthIncreased at #s5, #s6; EnemyInfo.Level <- EnemyInfo.Level + 1 at #s9, Level <- EnemyInfo.Level at #s10; SkillCounter <- EnemyInfo.SkillCounter at #s27. The author's note: 'Set stats based off of reincarnation or not'",
+     effect: [{calls: "RandomIntegerInRange", args: ["20", "45"], at: "Set_Reincarnated_Stats#s4"},
+              {sets: "Health", to: "(EnemyInfo.Health + HealthIncreased)", at: "Set_Reincarnated_Stats#s5"},
+              {sets: "Max_Health", to: "(EnemyInfo.Health + HealthIncreased)", at: "Set_Reincarnated_Stats#s6"},
+              {sets: "Level", to: "EnemyInfo.Level + 1", at: "Set_Reincarnated_Stats#s9"},
+              {sets: "Level", to: "EnemyInfo.Level", at: "Set_Reincarnated_Stats#s10"},
+              {sets: "SkillCounter", to: "EnemyInfo.SkillCounter", at: "Set_Reincarnated_Stats#s27"}]}
+  - {id: EN-5, kind: derived, text: "Ambush Intro plays the AmbushIntro montage and, without waiting for it, starts the enemy roaming", measure: "K2Node_PlayMontage_5 at Ambush_Intro#s1 (MontageToPlay /Game/SystemMenagerie/Characters/EnemyAI/Anim/BigZombie/locomotion/AmbushIntro, READ from its pin), its then pin wired on to Random_Roam() at #s2. The author's note: 'Face player and Ambush Intro'",
+     effect: [{calls: "Random_Roam", at: "Ambush_Intro#s2"}]}
+
+  # roaming and following (UC-EN2, UC-EN3)
+  - {id: EN-6, kind: derived, text: "Roaming: an enemy that was knocked down (WasAttched) does nothing; one that sees the player follows it; any other moves to a random reachable point within 2500 units of where it stands; on arriving it waits 1 s and roams again; if the move fails, a Frozen enemy waits 0.8 s (a retriggerable delay) and tests Frozen again, and an unfrozen one roams again at once", measure: "if WasAttched at Random_Roam#s1; if IsSeeingPlayer at #s2: Follow_Player() at #s3; the AI Move To node K2Node_AIMoveTo_1 at #s4 (Destination from K2_GetRandomReachablePointInRadius, Origin the enemy's own K2_GetActorLocation, Radius 2500, AcceptanceRadius 5, READ from their pins); On Success: Delay(1) at #s7, Random_Roam() at #s8; On Fail: if Frozen at #s11, RetriggerableDelay(0.8) at #s12 back to the test, else Random_Roam() at #s14. The author's note: 'Roam to random point'",
+     effect: [{branches: "WasAttched", at: "Random_Roam#s1"},
+              {branches: "IsSeeingPlayer", at: "Random_Roam#s2"},
+              {calls: "Follow_Player", at: "Random_Roam#s2:then"},
+              {calls: "Delay", args: ["1f"], at: "Random_Roam#s7"},
+              {branches: "Frozen", at: "Random_Roam#s11"},
+              {calls: "RetriggerableDelay", args: ["0.8f"], at: "Random_Roam#s11:then"},
+              {calls: "Random_Roam", at: "Random_Roam#s11:else"}]}
+  - {id: EN-7, kind: derived, text: "When its pawn sensor sees a pawn the enemy keeps it as Seen_Pawn; a pawn that implements PlayerCharacter_BPI makes it see the player (IsSeeingPlayer) and follow; any other pawn makes an enemy that was seeing the player stop", measure: "Seen_Pawn <- Pawn at OnSeePawn(PawnSensing)#s1; DoesImplementInterface(Seen_Pawn, PlayerCharacter_BPI) at #s2 (the interface /Game/SystemMenagerie/Characters/Player/PlayerCharacter_BPI, READ from its pin); IsSeeingPlayer <- true and Follow_Player() at #s3, #s4; if IsSeeingPlayer, IsSeeingPlayer <- false at #s5, #s6. The author's note: 'See player? If so then chase player and attack when close enough'",
+     effect: [{sets: "Seen_Pawn", to: "Pawn", at: "OnSeePawn(PawnSensing)#s1"},
+              {calls: "DoesImplementInterface", args: ["Seen_Pawn", "PlayerCharacter_BPI"], at: "OnSeePawn(PawnSensing)#s2"},
+              {sets: "IsSeeingPlayer", to: "true", at: "OnSeePawn(PawnSensing)#s2:then"},
+              {calls: "Follow_Player", at: "OnSeePawn(PawnSensing)#s2:then"},
+              {sets: "IsSeeingPlayer", to: "false", at: "OnSeePawn(PawnSensing)#s5:then"}]}
+  - {id: EN-8, kind: derived, text: "Following: while the enemy sees the player it may attack (Can_Attack) and, with a valid Seen_Pawn, moves to within 40 units of it; on arriving, if it may still attack, it runs one Attack_Combo at a time (a DoOnce, reopened as soon as the combo returns); if the move fails it stops seeing the player and roams; an enemy that no longer sees the player may not attack", measure: "if IsSeeingPlayer at Follow_Player#s1: Can_Attack <- true at #s2; if IsValid(Seen_Pawn) at #s3; the AI Move To node K2Node_AIMoveTo_0 at #s4 (TargetActor Seen_Pawn, AcceptanceRadius 40, stop on overlap, READ from its pins); On Success: if Can_Attack at #s7, the DoOnce at #s8-#s12, Attack_Combo() at #s14, reopened at #s15; On Fail: IsSeeingPlayer <- false at #s19, Random_Roam() at #s20; else Can_Attack <- false at #s21. The author's note: 'See player? If so then chase player and attack when close enough'",
+     effect: [{branches: "IsSeeingPlayer", at: "Follow_Player#s1"},
+              {sets: "Can_Attack", to: "true", at: "Follow_Player#s1:then"},
+              {calls: "IsValid", args: ["Seen_Pawn"], at: "Follow_Player#s3"},
+              {branches: "Can_Attack", at: "Follow_Player#s7"},
+              {calls: "Attack_Combo", at: "Follow_Player#s12:then"},
+              {sets: "IsSeeingPlayer", to: "false", at: "Follow_Player#s19"},
+              {calls: "Random_Roam", at: "Follow_Player#s20"},
+              {sets: "Can_Attack", to: "false", at: "Follow_Player#s1:else"}]}
+
+  # attacking (UC-EN4)
+  - {id: EN-9, kind: derived, text: "Attacking: when its last animation is done and the player's Health is above 1, the enemy picks Attack_Index at random from 0 to Max_Number_of_attacks, both included, and runs that attack: 0 Swing_down, 1 Punch, 2 Spit, 3 War_Cry, any other none; after it, once the animation is done, it follows the player if it still sees it and otherwise roams and may not attack; while an animation is not done it waits 0.2 s (a retriggerable delay) and tests again", measure: "if Animation_Done at Attack_Combo#s1; if Player_Character.Health > 1 at #s2; Attack_Index <- RandomIntegerInRange(0, Max_Number_of_attacks) at #s3 (inclusive: UnrealMathUtility.h:289-293); the switch at #s4: Swing_down() #s8, Punch() #s18, Spit() #s28, War_Cry() #s38, the default section empty; each then the shared test K2Node_IfThenElse_32 (#s9, #s19, #s29, #s39): Follow_Player() or Random_Roam() and Can_Attack <- false; RetriggerableDelay(0.2) at #s14, #s24, #s34, #s44, #s47. The author's note: 'See player? If so then chase player and attack when close enough'",
+     effect: [{branches: "Animation_Done", at: "Attack_Combo#s1"},
+              {calls: "RandomIntegerInRange", args: ["0", "Max_Number_of_attacks"], at: "Attack_Combo#s3"},
+              {calls: "Swing_down", at: "Attack_Combo#s4:k7"},
+              {calls: "Punch", at: "Attack_Combo#s4:k17"},
+              {calls: "Spit", at: "Attack_Combo#s4:k27"},
+              {calls: "War_Cry", at: "Attack_Combo#s4:k37"},
+              {calls: "Follow_Player", at: "Attack_Combo#s10:then"},
+              {sets: "Can_Attack", to: "false", at: "Attack_Combo#s10:else"},
+              {calls: "RetriggerableDelay", args: ["0.2f"], at: "Attack_Combo#s1:else"}]}
+  - {id: EN-10, kind: derived, text: "Swing down and Punch are one attack written twice, apart from their row (SwingDown, Punch) and montage (SwingDown, Punch): each runs one at a time (its own DoOnce), marks the animation not done, reads its damage row from EnemyAttacks_DT and plays its montage; DamageWithStats is the row's damage plus BlackthumbDamage while Black Thumb is active, plus Damage otherwise; at the montage's notify the enemy faces the player and sweeps an 80-unit sphere at Arrow1 for Hit_Trace_Object_Types, and a hit actor that implements DamageIndicator takes DamageWithStats; when the montage completes the animation is done and the attack can run again", measure: "Swing_down#s5 / Punch#s5 the DoOnce; Animation_Done <- false at #s7; the rows K2Node_GetDataTableRow_2 (SwingDown) and _3 (Punch) at #s8; if BlackThumb_Active at #s9: DamageWithStats <- BlackthumbDamage + the row's Damage at #s10, Damage + the row's Damage at #s27; the montages K2Node_PlayMontage_2 (SwingDown) and _3 (Punch), READ from their pins; On Notify Begin: FacePlayer(), SphereTraceSingleForObjects(Arrow1, 80, Hit_Trace_Object_Types) at #s20 / #s37, if DoesImplementInterface(Hit_Actor, DamageIndicator) Hit_Actor.TakenDamage(DamageWithStats, this) at #s26 / #s43; On Completed: Animation_Done <- true, the DoOnce reopened, at #s14-#s16 / #s31-#s33. The author's note: 'Attack Combos'",
+     effect: [{sets: "Animation_Done", to: "false", at: "Swing_down#s5:then"},
+              {reads: "BlackthumbDamage", at: "Swing_down#s10"},
+              {reads: "Damage", at: "Swing_down#s27"},
+              {calls: "SphereTraceSingleForObjects", args: ["80f", "Hit_Trace_Object_Types"], at: "Swing_down#s20"},
+              {calls: "TakenDamage", args: ["DamageWithStats"], at: "Swing_down#s25:then"},
+              {sets: "Animation_Done", to: "true", at: "Swing_down#s31"},
+              {sets: "Animation_Done", to: "false", at: "Punch#s5:then"},
+              {calls: "SphereTraceSingleForObjects", args: ["80f", "Hit_Trace_Object_Types"], at: "Punch#s37"},
+              {calls: "TakenDamage", args: ["DamageWithStats"], at: "Punch#s42:then"},
+              {sets: "Animation_Done", to: "true", at: "Punch#s14"}]}
+  - {id: EN-11, kind: derived, text: "Spit runs one at a time (its DoOnce): it marks the animation not done, reads its damage row (Spit) and sets DamageWithStats as the other attacks do, and plays the Spew montage; at the notify the enemy faces the player and spawns a SlimeBall at Arrow2, facing along Arrow2; when the montage completes the animation is done and Spit can run again", measure: "Animation_Done <- false at Spit#s1, before its DoOnce at #s2-#s6; K2Node_GetDataTableRow_1 (RowName Spit) at #s8; DamageWithStats at #s10 / #s21; the montage K2Node_PlayMontage_4 (Spew, READ from its pin); On Notify Begin: FacePlayer(), SpawnActor(SlimeBall, at Arrow2, rotated along its forward vector) at #s20 / #s31; On Completed: Animation_Done <- true at #s14 / #s25. The author's note: 'Attack Combos'",
+     effect: [{sets: "Animation_Done", to: "false", at: "Spit#s1"},
+              {sets: "DamageWithStats", at: "Spit#s9:else"},
+              {calls: "SpawnActor", args: ["SlimeBall", "Arrow2"], at: "Spit#s20"},
+              {calls: "SpawnActor", args: ["SlimeBall", "Arrow2"], at: "Spit#s31"},
+              {sets: "Animation_Done", to: "true", at: "Spit#s25"}]}
+  - {id: EN-12, kind: derived, text: "War Cry runs one at a time (its DoOnce): it marks the animation not done and plays the StunScream montage; at the notify the enemy faces the player and sweeps a 450-unit sphere around its Mesh for Stunnable_pawns, and a hit pawn that implements Stun_BPI is stunned; when the montage completes the animation is done and War Cry can run again", measure: "Animation_Done <- false at War_Cry#s1; the DoOnce at #s2-#s7; K2Node_PlayMontage_0 (StunScream, READ from its pin) at #s8; On Notify Begin: FacePlayer() #s16, SphereTraceSingleForObjects(Mesh, 450, Stunnable_pawns) #s17, if DoesImplementInterface(Stun_Pawn, Stun_BPI) #s22, Stun_Pawn.Stun() #s23; On Completed: Animation_Done <- true #s11. The author's note: 'Attack Combos'",
+     effect: [{sets: "Animation_Done", to: "false", at: "War_Cry#s1"},
+              {calls: "SphereTraceSingleForObjects", args: ["450f", "Stunnable_pawns"], at: "War_Cry#s17"},
+              {calls: "DoesImplementInterface", args: ["Stun_Pawn", "Stun_BPI"], at: "War_Cry#s22"},
+              {calls: "Stun", at: "War_Cry#s22:then"},
+              {sets: "Animation_Done", to: "true", at: "War_Cry#s11"}]}
+  - {id: EN-13, kind: derived, text: "Facing the player turns only the enemy's yaw toward the player, interpolated at speed 100 over the frame's time, pitch and roll 0", measure: "K2_SetActorRotation(Yaw = RInterpTo(its rotation, FindLookAtRotation(it, the player), GetWorldDeltaSeconds(), 100).Yaw) at FacePlayer#s1 (InterpSpeed 100 READ from K2Node_CallFunction_102's pin). The author's note: 'Face player and Ambush Intro'",
+     effect: [{calls: "K2_SetActorRotation", args: ["RInterpTo", "FindLookAtRotation", "100f"], at: "FacePlayer#s1"}]}
+
+  # every frame (UC-EN5)
+  - {id: EN-14, kind: derived, text: "Every frame a living enemy checks the player's range and turns its DamageIndicator to face the player's camera; while the player is TargetLocking it draws a custom-depth outline; a Dead enemy does nothing", measure: "if Dead at ReceiveTick#s1: nothing; Check_Player_Range() at #s2; DamageIndicator.K2_SetWorldRotation(FindLookAtRotation(it, GetPlayerCameraManager(0)'s location)) at #s3; if Player_Character.TargetLocking at #s4: Mesh.SetRenderCustomDepth(true) at #s5. The author's note: 'Update location and rotation for damage UI and vine whip mechanic'",
+     effect: [{branches: "Dead", at: "ReceiveTick#s1"},
+              {calls: "Check_Player_Range", at: "ReceiveTick#s1:else"},
+              {calls: "K2_SetWorldRotation", args: ["GetPlayerCameraManager"], at: "ReceiveTick#s3"},
+              {branches: "TargetLocking", at: "ReceiveTick#s4"},
+              {calls: "SetRenderCustomDepth", args: ["true"], at: "ReceiveTick#s4:then"}]}
+  - {id: EN-15, kind: derived, text: "Within 1300 units of the player the enemy shows its name text, marks PlayerInRange, shows the player's InspectEnemy prompt and lets the player inspect it (Can_inspect), and keeps its text turned to the player (Rotate_Text); on leaving that range, once, it hides the text and the prompt and clears PlayerInRange and Can_inspect", measure: "if Vector_Distance(the player, it) <= 1300 at Check_Player_Range#s1: TextRender.SetVisibility(true) #s2, PlayerInRange <- true #s3, Player_Character.UI.InspectEnemy.SetVisibility(Visible) #s4, Player_Character.Can_inspect <- true #s5, Rotate_Text() #s6; else if PlayerInRange #s9: the same undone at #s10-#s13. The author's note: 'Is player in range to see text, if so rotate text based off of player rotation'",
+     effect: [{calls: "Vector_Distance", args: ["1300"], at: "Check_Player_Range#s1"},
+              {sets: "PlayerInRange", to: "true", at: "Check_Player_Range#s1:then"},
+              {calls: "SetVisibility", args: ["Visible"], at: "Check_Player_Range#s1:then"},
+              {sets: "Can_inspect", to: "true", at: "Check_Player_Range#s1:then"},
+              {calls: "Rotate_Text", at: "Check_Player_Range#s1:then"},
+              {branches: "PlayerInRange", at: "Check_Player_Range#s9"},
+              {sets: "PlayerInRange", to: "false", at: "Check_Player_Range#s9:then"},
+              {sets: "Can_inspect", to: "false", at: "Check_Player_Range#s9:then"}]}
+  - {id: EN-16, kind: derived, text: "While the player is in range the enemy's name text keeps its yaw toward the player and its health bar shows Health over Max_Health: a 0.01 s Delay that loops back to its own test, so at most once a frame (a pending Delay ignores the Tick's new call)", measure: "TextRender.K2_SetWorldRotation(Yaw of FindLookAtRotation(it, the player)) at Rotate_Text#s1; Delay(0.01) at #s2; As_AI_Healthbar.Healthbar.SetPercent(Health / Max_Health) at #s3; if PlayerInRange at #s4, the same again and back to the test (K2Node_IfThenElse_10). A Delay already pending ignores a new call (KismetSystemLibrary.cpp:2602-2612) and counts down once a frame (DelayAction.h:27-30). The author's note: 'Is player in range to see text, if so rotate text based off of player rotation'",
+     effect: [{calls: "K2_SetWorldRotation", args: ["FindLookAtRotation"], at: "Rotate_Text#s1"},
+              {calls: "Delay", args: ["0.01f"], at: "Rotate_Text#s2"},
+              {calls: "SetPercent", args: ["Health", "Max_Health"], at: "Rotate_Text#s3"},
+              {branches: "PlayerInRange", at: "Rotate_Text#s4"}]}
+
+  # the vine whip (UC-EN9)
+  - {id: EN-17, kind: derived, text: "While the player IsWhipping (and is not TargetLocking) the enemy hides its outline, lets its capsule fall under physics and, 4 s later, checks whether it Landed; the Delay sits in Tick, so the Ticks of those 4 s do not start it again; with the whip over, an enemy that landed (WasAttched) is reset", measure: "if Player_Character.IsWhipping at ReceiveTick#s6: SetRenderCustomDepth(false) #s7, CapsuleComponent.SetSimulatePhysics(true) #s8, Delay(4) #s9, Landed() #s10; else if WasAttched #s11: Reset_Character() #s12. A pending Delay ignores a new call (KismetSystemLibrary.cpp:2602-2612). The author's note: 'Update location and rotation for damage UI and vine whip mechanic'",
+     effect: [{branches: "IsWhipping", at: "ReceiveTick#s6"},
+              {calls: "SetRenderCustomDepth", args: ["false"], at: "ReceiveTick#s6:then"},
+              {calls: "SetSimulatePhysics", args: ["true"], at: "ReceiveTick#s6:then"},
+              {calls: "Delay", args: ["4f"], at: "ReceiveTick#s6:then"},
+              {calls: "Landed", at: "ReceiveTick#s6:then"},
+              {branches: "WasAttched", at: "ReceiveTick#s11"},
+              {calls: "Reset_Character", at: "ReceiveTick#s11:then"}]}
+  - {id: EN-18, kind: derived, text: "Landed sweeps a sphere of Trace_Radius at the mesh for Object_Types; a hit keeps the hit's location (TraceLocation), marks WasAttched and sets TraceTries back to 0 and Trace_Radius to 40; a miss counts the try, widens the radius to 100 on the fifth, waits 0.8 s (a retriggerable delay) and sweeps again", measure: "SphereTraceSingleForObjects(the mesh, Trace_Radius, Object_Types) at Landed#s1; on a hit: TraceLocation <- the hit's Location #s4, WasAttched <- true #s6, TraceTries <- 0 #s7, Trace_Radius <- 40 #s8; on a miss: TraceTries <- TraceTries + 1 #s9, if TraceTries = 5 #s10 Trace_Radius <- 100 #s11; RetriggerableDelay(0.8) #s12 / #s16, the sweep again and back to the test (K2Node_IfThenElse_5). The author's note: 'Check to see if mesh landed. If not hitting ground even though mesh is on ground, then increase radius'",
+     effect: [{calls: "SphereTraceSingleForObjects", args: ["Trace_Radius", "Object_Types"], at: "Landed#s1"},
+              {sets: "TraceLocation", at: "Landed#s3:then"},
+              {sets: "WasAttched", to: "true", at: "Landed#s3:then"},
+              {sets: "Trace_Radius", to: "40", at: "Landed#s3:then"},
+              {sets: "TraceTries", to: "(TraceTries + 1)", at: "Landed#s3:else"},
+              {branches: "TraceTries", at: "Landed#s10"},
+              {sets: "Trace_Radius", to: "100", at: "Landed#s10:then"},
+              {calls: "RetriggerableDelay", args: ["0.8f"], at: "Landed#s10:else"}]}
+  - {id: EN-19, kind: derived, text: "Reset Character stops the capsule's physics, clears WasAttched, puts the capsule 100 units above TraceLocation and upright, attaches the mesh back to it (yaw -90, 110 units down) and starts the enemy roaming", measure: "CapsuleComponent.SetSimulatePhysics(false) at Reset_Character#s1; WasAttched <- false #s2; K2_SetWorldLocation(TraceLocation + 100 up) #s3; K2_SetRelativeRotation(0, 0, 0) #s4; Mesh yaw -90 #s5; Mesh.K2_AttachToComponent(CapsuleComponent) #s6; Mesh 110 down #s7; Random_Roam() #s8. The author's note: 'Reset Character: unset physics and reattach the capsule component with mesh'",
+     effect: [{calls: "SetSimulatePhysics", args: ["false"], at: "Reset_Character#s1"},
+              {sets: "WasAttched", to: "false", at: "Reset_Character#s2"},
+              {calls: "K2_SetWorldLocation", args: ["TraceLocation", "100"], at: "Reset_Character#s3"},
+              {calls: "K2_AttachToComponent", args: ["CapsuleComponent"], at: "Reset_Character#s6"},
+              {calls: "Random_Roam", at: "Reset_Character#s8"}]}
+
+  # hit by a spell (UC-EN6)
+  - {id: EN-20, kind: derived, text: "A spell's hit (the DamageIndicator interface's TakenDamage) on a living enemy puts the player in combat, turns the enemy to the player, shows the damage in the colour of the player's SpellInfo (the number text conversion's defaults, KismetTextLibrary.h:248) and takes the player's SpellInfo.Damage from Health; a Dead enemy ignores it", measure: "if Dead at TakenDamage#s1; Player_Character.SetInCombat() #s2; FacePlayer() #s3; As_Damage_Indicator_UI.SetColorAndOpacity(SpellInfo.DamageColor) #s4; Apply_Damage(Conv_DoubleToText(SpellInfo.Damage)) #s5; Health <- Health - Player_Character.SpellInfo.Damage #s6. The interface READ from the event's EventReference (/Game/SystemMenagerie/MagicSystem/PrimaryWeapons/DamageIndicator). The author's note: 'Take damage event'",
+     effect: [{branches: "Dead", at: "TakenDamage#s1"},
+              {calls: "SetInCombat", at: "TakenDamage#s1:else"},
+              {calls: "FacePlayer", at: "TakenDamage#s1:else"},
+              {calls: "Apply_Damage", args: ["SpellInfo"], at: "TakenDamage#s5"},
+              {sets: "Health", to: "(Health - Player_Character.SpellInfo.Damage)", at: "TakenDamage#s6"}]}
+  - {id: EN-21, kind: derived, text: "At Health 0 or below the enemy ends the player's combat (In_Combat), is Dead and may not attack, records the player's SpellInfo.Kill_Blow_Type, hides the player's InspectEnemy prompt and its own text, stops the player inspecting, gives the player back its Material if the toxic material was on it, plays the DeathDrop montage and, without waiting for it, starts dissolving (DisolveTimer) and dies (Death)", measure: "if Health <= 0 at TakenDamage#s7: In_Combat <- false #s8, Dead <- true #s9, Can_Attack <- false #s10, Kill_Blow_Type <- SpellInfo.Kill_Blow_Type #s11, InspectEnemy hidden #s12, TextRender hidden #s13, Can_inspect <- false #s14; if Toxic_Material_Applied #s15: Mesh.SetMaterial(0, Player_Character.Material) #s16; K2Node_PlayMontage_1 (/Game/DeathDrop, READ from its pin) #s17 / #s20, DisolveTimer() and Death() on its then pin #s18-#s19 / #s21-#s22. The author's note: 'Take damage event'",
+     effect: [{branches: "Health", at: "TakenDamage#s7"},
+              {sets: "In_Combat", to: "false", at: "TakenDamage#s7:then"},
+              {sets: "Dead", to: "true", at: "TakenDamage#s7:then"},
+              {sets: "Can_Attack", to: "false", at: "TakenDamage#s7:then"},
+              {sets: "Kill_Blow_Type", to: "Player_Character.SpellInfo.Kill_Blow_Type", at: "TakenDamage#s7:then"},
+              {calls: "SetMaterial", args: ["Player_Character.Material"], at: "TakenDamage#s15:then"},
+              {calls: "DisolveTimer", at: "TakenDamage#s15:then"},
+              {calls: "Death", at: "TakenDamage#s15:else"}]}
+  - {id: EN-22, kind: derived, text: "A hit the enemy survives makes an enemy with Blackthumb enrage (Blackthumb), when the player's SpellInfo.Kill_Blow_Type is NewEnumerator3", measure: "if Blackthumb at TakenDamage#s23; if SpellInfo.Kill_Blow_Type = NewEnumerator3 at #s24; Blackthumb() at #s25. The variable and the event share the name Blackthumb",
+     effect: [{branches: "Blackthumb", at: "TakenDamage#s23"},
+              {reads: "Kill_Blow_Type", at: "TakenDamage#s24"},
+              {calls: "Blackthumb", at: "TakenDamage#s24:then"}]}
+
+  # burning (UC-EN7)
+  - {id: EN-23, kind: derived, text: "Set burning (the Burning_BPINT interface's Burning), an enemy not burning already (a DoOnce) attaches two fire systems, AI_OnFire and AI_OnFireSmut, to its Mesh and takes burn damage (AbilityDamageInfo); once AbilityDamageCounter is back at 0 the fires are destroyed and it can burn again; until then it waits 0.2 s (a retriggerable delay) and tests again", measure: "the DoOnce at Burning#s1-#s6; SpawnSystemAttached(AI_OnFire) #s7, (AI_OnFireSmut) #s9; AbilityDamageInfo() #s11; if AbilityDamageCounter = 0 #s12: both K2_DestroyComponent() #s13-#s14, the DoOnce reopened #s15-#s16; else RetriggerableDelay(0.2) #s17 and back to the test (K2Node_IfThenElse_65). The interface READ from the event's EventReference. The author's note: 'Burn damage every two seconds for six seconds'",
+     effect: [{calls: "SpawnSystemAttached", args: ["AI_OnFire"], at: "Burning#s5:then"},
+              {calls: "AbilityDamageInfo", at: "Burning#s5:then"},
+              {branches: "AbilityDamageCounter", at: "Burning#s12"},
+              {calls: "K2_DestroyComponent", at: "Burning#s12:then"},
+              {sets: "DoOnce_8_Closed", to: "false", at: "Burning#s12:then"},
+              {calls: "RetriggerableDelay", args: ["0.2f"], at: "Burning#s12:else"}]}
+  - {id: EN-24, kind: derived, text: "Each burn puts the player in combat, takes Damage_Over_Time from the player's AbilityInfo (Set_Ability_Info) and plays MS_BurnDamage at half volume; a Fire_Resistant enemy first multiplies Damage_Over_Time by its Fire_Resistance; then three hits, 2 s apart, each shown and counted (AbilityDamageCounter) and taken from Health; at 0 health it ends the player's combat, records the fire kill blow (NewEnumerator1), sets the count to 0 and dies; after the third hit the count goes back to 0", measure: "SetInCombat() at AbilityDamageInfo#s1; Set_Ability_Info() #s2, which sets Damage_Over_Time <- Player_Character.AbilityInfo.Damage_Over_Time (Set_Ability_Info#s1); PlaySound2D(MS_BurnDamage, 0.5) #s4; if Fire_Resistant #s5: Damage_Over_Time <- Damage_Over_Time x Fire_Resistance #s6; shown, counted and taken at #s7-#s9 / #s22-#s24; if Health <= 0 #s10 / #s25: In_Combat <- false, Kill_Blow_Type <- NewEnumerator1, AbilityDamageCounter <- 0, Death(); else if AbilityDamageCounter = 3 #s15 / #s30: 0; else Delay(2), the next hit and back to the health test (the shared node K2Node_IfThenElse_12). The author's note: 'Burn ability damage'",
+     effect: [{calls: "SetInCombat", at: "AbilityDamageInfo#s1"},
+              {calls: "Set_Ability_Info", at: "AbilityDamageInfo#s2"},
+              {sets: "Damage_Over_Time", to: "Player_Character.AbilityInfo.Damage_Over_Time", at: "Set_Ability_Info#s1"},
+              {calls: "PlaySound2D", args: ["MS_BurnDamage", "0.5f"], at: "AbilityDamageInfo#s4"},
+              {branches: "Fire_Resistant", at: "AbilityDamageInfo#s5"},
+              {sets: "Damage_Over_Time", to: "(Damage_Over_Time × Fire_Resistance)", at: "AbilityDamageInfo#s5:then"},
+              {sets: "AbilityDamageCounter", to: "AbilityDamageCounter + 1", at: "AbilityDamageInfo#s5:else"},
+              {sets: "Health", to: "(Health - Damage_Over_Time)", at: "AbilityDamageInfo#s5:else"},
+              {sets: "Kill_Blow_Type", to: "KillBlowType_E.NewEnumerator1", at: "AbilityDamageInfo#s25:then"},
+              {calls: "Death", at: "AbilityDamageInfo#s25:then"},
+              {sets: "AbilityDamageCounter", to: "0", at: "AbilityDamageInfo#s30:then"},
+              {calls: "Delay", args: ["2f"], at: "AbilityDamageInfo#s30:else"}]}
+
+  # freezing (UC-EN8)
+  - {id: EN-25, kind: derived, text: "Frozen (the FreezeActor_BPI interface's FrozeActor), an enemy that Can_be_frozen is marked Frozen and, unless frozen already (a DoOnce), attaches the Frozen system, keeps its materials 0 and 1 (Material_1, Material_2), puts on Ice_Axe and Large_Ice, stops its own time (CustomTimeDilation 0) for 4 s, unfreezes, and can be frozen again 3 s later", measure: "if Can_be_frozen at FrozeActor#s1: Frozen <- true #s2; the DoOnce #s3-#s8; SpawnSystemAttached(Frozen) #s9; Material_1 <- GetMaterial(0) #s11, Material_2 <- GetMaterial(1) #s12; SetMaterial(0, Ice_Axe) #s13, (1, Large_Ice) #s14; CustomTimeDilation <- 0 #s15; Delay(4) #s16; Unfreeze() #s17; Delay(3) #s18; the DoOnce reopened #s19-#s20. The interface READ from the event's EventReference. The author's note: 'Freeze, then set unable to be frozen for 3 seconds'",
+     effect: [{branches: "Can_be_frozen", at: "FrozeActor#s1"},
+              {sets: "Frozen", to: "true", at: "FrozeActor#s1:then"},
+              {calls: "SpawnSystemAttached", args: ["Frozen"], at: "FrozeActor#s7:then"},
+              {calls: "SetMaterial", args: ["Ice_Axe"], at: "FrozeActor#s7:then"},
+              {sets: "CustomTimeDilation", to: "0f", at: "FrozeActor#s7:then"},
+              {calls: "Delay", args: ["4f"], at: "FrozeActor#s16"},
+              {calls: "Unfreeze", at: "FrozeActor#s17"},
+              {calls: "Delay", args: ["3f"], at: "FrozeActor#s18"}]}
+  - {id: EN-26, kind: derived, text: "Unfreezing destroys the Frozen system, puts Material_1 and Material_2 back on the mesh's slots 0 and 1, gives the enemy its time back (CustomTimeDilation 1) and clears Frozen", measure: "FrozenSystem.K2_DestroyComponent() at Unfreeze#s1; Mesh.SetMaterial(0, Material_1) #s2, (1, Material_2) #s3; CustomTimeDilation <- 1 #s4; Frozen <- false #s5. The author's note: 'Unfreeze'",
+     effect: [{calls: "K2_DestroyComponent", at: "Unfreeze#s1"},
+              {calls: "SetMaterial", args: ["Material_1"], at: "Unfreeze#s2"},
+              {calls: "SetMaterial", args: ["Material_2"], at: "Unfreeze#s3"},
+              {sets: "CustomTimeDilation", to: "1f", at: "Unfreeze#s4"},
+              {sets: "Frozen", to: "false", at: "Unfreeze#s5"}]}
+
+  # Black Thumb (UC-EN10)
+  - {id: EN-27, kind: derived, text: "Black Thumb enrages an enemy that is not enraged already: BlackThumb_Active, a black 'Black Thumb' label, BlackthumbDamage of Damage and half again, and the enraged particles", measure: "if BlackThumb_Active at Blackthumb#s1: nothing; BlackThumb_Active <- true #s2; SetColorAndOpacity(0, 0, 0, 1) #s3; Apply_Damage('Black Thumb') #s4; BlackthumbDamage <- Damage + Damage x 0.5 #s5; Enraged_Particles() #s6. The author's note: 'Black Thumb'",
+     effect: [{branches: "BlackThumb_Active", at: "Blackthumb#s1"},
+              {sets: "BlackThumb_Active", to: "true", at: "Blackthumb#s1:else"},
+              {calls: "Apply_Damage", args: ["Black Thumb"], at: "Blackthumb#s4"},
+              {sets: "BlackthumbDamage", to: "(Damage + (Damage × 0.5))", at: "Blackthumb#s5"},
+              {calls: "Enraged_Particles", at: "Blackthumb#s6"}]}
+  - {id: EN-28, kind: derived, text: "The enraged particles: a shockwave emitter (P_ky_shotShockwave) at the Pelvis, destroyed when it finishes; while it is valid the event waits 0.01 s (a retriggerable delay) and tests again; once it is gone it counts Enraged_Timer up and spawns another, and when the count reaches 15 Black Thumb ends (BlackThumb_Active cleared, Enraged_Timer 0)", measure: "SpawnEmitterAttached(P_ky_shotShockwave, Mesh, Pelvis, auto destroy true) at Enraged_Particles#s1; if IsValid(Enraged_Particle_System) #s3: RetriggerableDelay(0.01) #s4 and back (K2Node_VariableGet_176); else if Enraged_Timer = 15 #s6: BlackThumb_Active <- false #s7, Enraged_Timer <- 0 #s8; else Enraged_Timer + 1 #s9, Enraged_Particles() #s10. The author's note: 'BlackThumb Particles'",
+     effect: [{calls: "SpawnEmitterAttached", args: ["P_ky_shotShockwave", "Pelvis"], at: "Enraged_Particles#s1"},
+              {calls: "IsValid", args: ["Enraged_Particle_System"], at: "Enraged_Particles#s3"},
+              {calls: "RetriggerableDelay", args: ["0.01f"], at: "Enraged_Particles#s3:then"},
+              {branches: "Enraged_Timer", at: "Enraged_Particles#s6"},
+              {sets: "BlackThumb_Active", to: "false", at: "Enraged_Particles#s6:then"},
+              {sets: "Enraged_Timer", to: "0", at: "Enraged_Particles#s6:then"},
+              {sets: "Enraged_Timer", to: "Enraged_Timer + 1", at: "Enraged_Particles#s6:else"},
+              {calls: "Enraged_Particles", at: "Enraged_Particles#s6:else"}]}
+
+  # toxic (UC-EN11)
+  - {id: EN-29, kind: derived, text: "A Toxic enemy in range poisons the player: the first time it puts ToxicChar on the player's mesh and marks Toxic_Material_Applied; after that, one at a time (a DoOnce), if still Toxic, within 1300 units and the player implements DamageIndicator, it reads the Toxic damage row and damages the player (TakenDamage), turns Toxic off for 3 s and on again; when the player leaves the range the player's own Material goes back on and the mark is cleared", measure: "if Toxic at Check_Player_Range#s7: Toxic_Hit() #s8; if Toxic_Material_Applied at Toxic_Hit#s1, else SetMaterial(0, ToxicChar) #s18, Toxic_Material_Applied <- true #s19, the DoOnce reopened #s20-#s21; the DoOnce #s2-#s7; if Toxic #s8; Vector_Distance <= 1300 #s9; DoesImplementInterface(Player_Character, DamageIndicator) #s10; K2Node_GetDataTableRow_4 (RowName Toxic) #s11; Player_Character.TakenDamage(the row's damage) #s12; Toxic <- false #s13, Delay(3) #s14, Toxic <- true #s15; on leaving the range Check_Player_Range#s14-#s16. The author's note: 'Toxic DOT'",
+     effect: [{branches: "Toxic", at: "Check_Player_Range#s7"},
+              {calls: "Toxic_Hit", at: "Check_Player_Range#s7:then"},
+              {branches: "Toxic_Material_Applied", at: "Toxic_Hit#s1"},
+              {calls: "SetMaterial", args: ["ToxicChar"], at: "Toxic_Hit#s1:else"},
+              {sets: "Toxic_Material_Applied", to: "true", at: "Toxic_Hit#s1:else"},
+              {calls: "Vector_Distance", args: ["1300"], at: "Toxic_Hit#s9"},
+              {calls: "TakenDamage", at: "Toxic_Hit#s10:then"},
+              {sets: "Toxic", to: "false", at: "Toxic_Hit#s13"},
+              {calls: "Delay", args: ["3f"], at: "Toxic_Hit#s14"},
+              {sets: "Toxic", to: "true", at: "Toxic_Hit#s15"},
+              {sets: "Toxic_Material_Applied", to: "false", at: "Check_Player_Range#s14:then"}]}
+
+  # death and what comes back (UC-EN12, UC-EN13)
+  - {id: EN-30, kind: derived, text: "On death the enemy rolls Survive between 1 and 1: the roll is always 1 (a range that includes both ends and holds one value), so the enemy always survives into its next life and the branch that destroys it never runs", measure: "Survive <- RandomIntegerInRange(1, 1) at Death#s1 (KismetMathLibrary.inl:248-251, FMath::RandRange, inclusive of both ends: UnrealMathUtility.h:274-293); if Survive = 1 at #s2; this.K2_DestroyActor() on its else side at #s32. The author's note: 'Death: Set new stats then transfer to reincarnation stats array in level blueprint'",
+     effect: [{sets: "Survive", at: "Death#s1"},
+              {calls: "RandomIntegerInRange", args: ["1, 1"], at: "Death#s1"},
+              {branches: "Survive", at: "Death#s2"},
+              {calls: "K2_DestroyActor", at: "Death#s2:else"}]}
+  - {id: EN-31, kind: derived, text: "Surviving death, the enemy comes back stronger by the kill blow that ended it (Kill_Blow_Type): NewEnumerator0 Max_Health up 40%; NewEnumerator1 Fire_Resistance 0.5, Fire_Resistant, walking 30% faster, the fire skills, HasBeenKilledByFire and the class Fire_Ai; NewEnumerator2 no longer Can_be_frozen, Can_War_Cry, Max_Number_of_attacks 3, the ice skills, HasBeenKilledByIce and Ice_Ai; NewEnumerator3 Blackthumb and Toxic, the nature skills, HasBeenKilledByNature and Toxic_Boss; each but NewEnumerator0 adds 2 to SkillCounter after placing its skills; then it records its stats (ReincarnatedStatsEvent)", measure: "if Kill_Blow_Type = NewEnumerator0 at Death#s3: Max_Health + Max_Health x 0.4 #s4; NewEnumerator1 #s6: #s7-#s14, FireStatChecker() #s10 before SkillCounter + 2 #s11; NewEnumerator2 #s15: #s16-#s23; NewEnumerator3 #s24: #s25-#s31; ReincarnatedStatsEvent() at #s5, #s14, #s23, #s31. The author's note: 'Death: Set new stats then transfer to reincarnation stats array in level blueprint'",
+     effect: [{branches: "Kill_Blow_Type", at: "Death#s3"},
+              {sets: "Max_Health", to: "(Max_Health + (Max_Health × 0.4))", at: "Death#s3:then"},
+              {sets: "Fire_Resistance", to: "0.5", at: "Death#s6:then"},
+              {sets: "Fire_Resistant", to: "true", at: "Death#s6:then"},
+              {sets: "MaxWalkSpeed", to: "(CharacterMovement.MaxWalkSpeed + (CharacterMovement.MaxWalkSpeed × 0.3))", at: "Death#s6:then"},
+              {sets: "SkillCounter", to: "(SkillCounter + 2)", at: "Death#s6:then"},
+              {sets: "HasBeenKilledByFire", to: "true", at: "Death#s6:then"},
+              {sets: "Can_be_frozen", to: "false", at: "Death#s15:then"},
+              {sets: "Can_War_Cry", to: "true", at: "Death#s15:then"},
+              {sets: "Max_Number_of_attacks", to: "3", at: "Death#s15:then"},
+              {sets: "HasBeenKilledByIce", to: "true", at: "Death#s15:then"},
+              {sets: "Blackthumb", to: "true", at: "Death#s24:then"},
+              {sets: "Toxic", to: "true", at: "Death#s24:then"},
+              {sets: "HasBeenKilledByNature", to: "true", at: "Death#s24:then"},
+              {calls: "ReincarnatedStatsEvent", at: "Death#s3:then"}]}
+  - {id: EN-32, kind: derived, text: "The skills follow the order of deaths: an enemy not yet killed by an element puts that element's two skill textures in the next free pair, Skill 1 and 2 at SkillCounter 0, 3 and 4 at 2, 5 and 6 at 4 - fire SystemMenagerie_UI_Layout_BurnRubber and SystemMenagerie_UI_Layout_CharredStat, ice SystemMenagerie_UI_Layout_FrostBite and SystemMenagerie_UI_Layout_WarCry, nature SystemMenagerie_UI_Layout_BlackThumb and SystemMenagerie_UI_Layout_Toxic; one already killed by it changes nothing", measure: "FireStatChecker, IceStatChecker and NatureStatChecker, each: if HasBeenKilledBy... at #s1: nothing; if SkillCounter = 0 #s2: Skill_1_Texture, Skill_2_Texture #s3-#s4; = 2 #s5: Skill3_Texture, Skill4_Texture #s6-#s7; = 4 #s8: Skill5_Texture, Skill6_Texture #s9-#s10 (SystemMenagerie_UI_Layout_...). The author's note: 'Set Skills based off of death order'",
+     effect: [{branches: "HasBeenKilledByFire", at: "FireStatChecker#s1"},
+              {branches: "SkillCounter", at: "FireStatChecker#s2"},
+              {sets: "Skill_1_Texture", to: "SystemMenagerie_UI_Layout_BurnRubber", at: "FireStatChecker#s2:then"},
+              {branches: "HasBeenKilledByIce", at: "IceStatChecker#s1"},
+              {sets: "Skill3_Texture", to: "SystemMenagerie_UI_Layout_FrostBite", at: "IceStatChecker#s5:then"},
+              {branches: "HasBeenKilledByNature", at: "NatureStatChecker#s1"},
+              {sets: "Skill5_Texture", to: "SystemMenagerie_UI_Layout_BlackThumb", at: "NatureStatChecker#s8:then"}]}
+  - {id: EN-33, kind: derived, text: "The record of an enemy's stats (EnemyInfo) is written from what it is now: its class, name, Max_Health as both its health and its maximum, damage, walking speed, level, resistances and flags, attack count, six skill textures, kill record and SkillCounter", measure: "one set per field of EnemyInfo at ReincarnatedStatsEvent#s1-#s24: Out_Row_Class #s1, Max_Health #s3 and #s4, CharacterMovement.MaxWalkSpeed #s6, SkillCounter #s24. The author's note: 'Reincarnated Stats Struct'",
+     effect: [{reads: "Out_Row_Class", at: "ReincarnatedStatsEvent#s1"},
+              {reads: "Max_Health", at: "ReincarnatedStatsEvent#s3"},
+              {reads: "MaxWalkSpeed", at: "ReincarnatedStatsEvent#s6"},
+              {reads: "SkillCounter", at: "ReincarnatedStatsEvent#s24"}]}
+  - {id: EN-34, kind: derived, text: "Dying, the enemy's material 1 becomes a dynamic instance (DisolveDynMateial) tinted KilledByColor by the kill blow - NewEnumerator0 (1, 0, 0.72), NewEnumerator1 (1, 0.37, 0), NewEnumerator2 (0, 0.94, 1), NewEnumerator3 (0.11, 1, 0) - and its 'Disolve Rate' falls by 0.005 a step, a 0.01 s retriggerable delay apart, from Disolve down to -0.5, when HasDisolved is set", measure: "CreateDynamicMaterialInstance(1) at DisolveTimer#s1, DisolveDynMateial #s2, SetMaterial(1) #s3; if Kill_Blow_Type = NewEnumerator0..3 at #s4, #s13, #s22, #s31: SetVectorParameterValueOnMaterials(KilledByColor) #s5, #s14, #s23, #s32; one shared loop (K2Node_IfThenElse_67): if Disolve > -0.5, Disolve <- Disolve - 0.005, the parameter, RetriggerableDelay(0.01); else HasDisolved <- true. The author's note: 'Dynamic dissolve material for death anim'",
+     effect: [{calls: "CreateDynamicMaterialInstance", at: "DisolveTimer#s1"},
+              {calls: "SetMaterial", args: ["DisolveDynMateial"], at: "DisolveTimer#s3"},
+              {branches: "Kill_Blow_Type", at: "DisolveTimer#s4"},
+              {calls: "SetVectorParameterValueOnMaterials", args: ["KilledByColor", "Z = 0.72"], at: "DisolveTimer#s4:then"},
+              {calls: "SetVectorParameterValueOnMaterials", args: ["KilledByColor", "Y = 0.37"], at: "DisolveTimer#s13:then"},
+              {calls: "SetVectorParameterValueOnMaterials", args: ["KilledByColor", "Y = 0.94"], at: "DisolveTimer#s22:then"},
+              {calls: "SetVectorParameterValueOnMaterials", args: ["KilledByColor", "X = 0.11"], at: "DisolveTimer#s31:then"},
+              {branches: "Disolve", at: "DisolveTimer#s7"},
+              {sets: "Disolve", to: "(Disolve - 0.005)", at: "DisolveTimer#s7:then"},
+              {calls: "RetriggerableDelay", args: ["0.01f"], at: "DisolveTimer#s7:then"},
+              {sets: "HasDisolved", to: "true", at: "DisolveTimer#s7:else"}]}
+
+  # inspecting and levelling up (UC-EN14, UC-EN15)
+  - {id: EN-35, kind: derived, text: "Inspecting the enemy writes its Name, its Level and its Max_Health (the text conversions' defaults, KismetTextLibrary.h:240 and :248) into the player's Inspect_UI; with a SkillCounter above 0 it shows skills 1 and 2 with their textures and hides 3 while the count is at most 6, shows 3 and 4 and hides 5 from 3, and shows 5 and 6 from 5; with none it hides skill 3", measure: "Inspect_UI.Name.SetText(Name) at InspectInfo#s1; levelnumber from Conv_IntToText(Level) #s2; healthnum from Conv_DoubleToText(Max_Health) #s3; if SkillCounter > 0 #s4: <= 6 #s5 -> #s6-#s10; >= 3 #s11 -> #s12-#s16; >= 5 #s17 -> #s18-#s21; else Skill3 hidden #s22. The author's note: 'Inspection: Set stats to UI variables and then adjust skills visibility based off of what skills the enemy has'",
+     effect: [{calls: "SetText", args: ["Name"], at: "InspectInfo#s1"},
+              {calls: "Conv_IntToText", args: ["Level"], at: "InspectInfo#s2"},
+              {branches: "SkillCounter", at: "InspectInfo#s4"},
+              {calls: "SetBrushFromTexture", args: ["Skill_1_Texture"], at: "InspectInfo#s5:then"},
+              {calls: "SetBrushFromTexture", args: ["Skill3_Texture"], at: "InspectInfo#s11:then"},
+              {calls: "SetBrushFromTexture", args: ["Skill5_Texture"], at: "InspectInfo#s17:then"},
+              {calls: "SetVisibility", args: ["Skill3", "Hidden"], at: "InspectInfo#s4:else"}]}
+  - {id: EN-36, kind: derived, text: "Level Up (the LevelUp_BPI interface's Level Up) adds one Level, plays the LevelUpMontage, raises Max_Health by a random 20 to 45 and sets Health to it, shows a white 'LEVEL UP' label and the new level on LevelText, bursts a shockwave at the Pelvis, and leaves the enemy idle: the animation done and Can_Attack cleared", measure: "Level + 1 at Level_Up#s1; K2Node_PlayMontage_6 (/Game/LevelUpMontage, READ from its pin) #s2; HealthIncreased <- RandomIntegerInRange(20, 45) #s3; Max_Health <- Max_Health + HealthIncreased #s4; Health <- Max_Health #s5; white #s6; LevelText #s7; Apply_Damage('LEVEL UP') #s8; SpawnEmitterAttached(P_ky_shotShockwave, Pelvis) #s9; Animation_Done <- true #s10; Can_Attack <- false #s11. The interface READ from the event's EventReference. The author's note: 'Level Up'",
+     effect: [{sets: "Level", to: "Level + 1", at: "Level_Up#s1"},
+              {calls: "RandomIntegerInRange", args: ["20", "45"], at: "Level_Up#s3"},
+              {sets: "Max_Health", to: "(Max_Health + HealthIncreased)", at: "Level_Up#s4"},
+              {sets: "Health", to: "Max_Health", at: "Level_Up#s5"},
+              {calls: "Apply_Damage", args: ["LEVEL UP"], at: "Level_Up#s8"},
+              {sets: "Animation_Done", to: "true", at: "Level_Up#s10"},
+              {sets: "Can_Attack", to: "false", at: "Level_Up#s11"}]}
+
+  # what the chain needs that the paste does not say: each a question for the Blueprint's author
+  - {id: IR-EN-1, kind: inferred, text: "An enemy that dies may also stay dead: today it always reincarnates", measure: "Survive <- RandomIntegerInRange(1, 1) at Death#s1 is always 1 (EN-30), so this.K2_DestroyActor() at Death#s32 never runs", why: "the survive roll can only give 1: was a chance meant here (a range such as 1 to 2), and when should an enemy stay dead?",
+     effect: {absent: "the chance an enemy has to come back is the owner's design: nothing to assert before it is said"}}
+  - {id: IR-EN-2, kind: inferred, text: "A hit costs the damage the hit carries: today TakenDamage ignores its own Damage Amount and Attacking Actor and takes the player's current SpellInfo.Damage, whoever hit", measure: "the event K2Node_Event_3 (TakenDamage) leaves both outputs, Damage Amount and Attacking Actor, unwired (Enemy_AI_BP.t3d line 712); Health <- Health - Player_Character.SpellInfo.Damage at TakenDamage#s6; the enemy itself calls TakenDamage(DamageWithStats, this) on what it hits (Swing_down#s26)", why: "should a hit cost the Damage Amount the caller passes, so an enemy hit by another enemy's attack takes that attack's damage and not the player's selected spell?",
+     effect: {absent: "whose damage counts is the owner's design: the code holds one reading, the interface implies the other"}}
+  - {id: IR-EN-3, kind: inferred, text: "The player character owns its members: the enemy reads TargetLocking, IsWhipping, Health, SpellInfo, AbilityInfo, UI, Inspect_UI and Material from it, and writes its In_Combat, Can_inspect and Toxic_Material_Applied", measure: "TargetLocking at ReceiveTick#s4, IsWhipping #s6, Health at Attack_Combo#s2, UI at Check_Player_Range#s4 and TakenDamage#s12, Inspect_UI at InspectInfo#s1-#s22, Material at TakenDamage#s16 and Check_Player_Range#s15 - none written in this paste; In_Combat written at TakenDamage#s8 and AbilityDamageInfo#s11/#s26, Can_inspect at Check_Player_Range#s5/#s13 and TakenDamage#s14, Toxic_Material_Applied at Check_Player_Range#s16 and Toxic_Hit#s19", why: "these live in BP_LearningKit_PlayerCharacter, which is not in this paste: who sets the flags the enemy reads every frame, and may an enemy change the player's own state, or should it ask the player through an interface?",
+     effect: {absent: "the player character's Blueprint is not in the paste: what it owns and allows is the owner's to say"}}
+  - {id: IR-EN-4, kind: inferred, text: "An enemy's life starts and ends outside this graph: something sets Reincarnated and calls Check_For_Reincarnation or Ambush_Intro, and something calls TakenDamage, Burning, FrozeActor, InspectInfo and Level Up", measure: "none of these is called anywhere in the paste; BeginPlay only casts (EN-1), though the author's note around it says 'Spawn in, start roaming'. The system's Level Blueprint (blueprintue.com/blueprint/1rmt5t6d) calls Check For Reincarnation 7 times and Ambush Intro once and sets Reincarnated?; its Player Blueprint (blueprintue.com/blueprint/c1ovvunf) calls Level Up and TakenDamage (both READ by counting the node references in those pastes, 2026-10-29)", why: "Q-UNWRITTEN Reincarnated?: is the level Blueprint the one place an enemy is started from, and should BeginPlay start roaming as its note says?",
+     effect: {absent: "the callers are in other Blueprints, not in this paste"}}
+  - {id: IR-EN-5, kind: inferred, text: "The custom events called like functions should be functions: 26 of them are called from other graphs of the enemy and none returns a value", measure: "26 EVENTCALL questions (view/trace.js), e.g. Check_Player_Range from ReceiveTick#s2, Attack_Combo from Follow_Player#s14, Death from TakenDamage#s19 and AbilityDamageInfo#s14", why: "Q-EVENTCALL: an event cannot return or be told apart from an outside call - should Check_Player_Range, Attack_Combo, Death and the others be functions?",
+     effect: {absent: "the shape of the code is the owner's call: the events run as written"}}
+  - {id: IR-EN-6, kind: inferred, text: "Every wait is a named design value: 0.01 s for the self-calling loops (text, particles, dissolve), 0.2 s and 0.8 s for the retries, 1 s between roams, 4 s from the whip to the landing check, 2 s between burns", measure: "Delay or RetriggerableDelay literals at Rotate_Text#s2/#s6, Enraged_Particles#s4, DisolveTimer#s10/#s19/#s28/#s37, Burning#s17, Attack_Combo#s14/#s24/#s34/#s44/#s47, Random_Roam#s7/#s12, Landed#s12/#s16, ReceiveTick#s9, AbilityDamageInfo#s17/#s32; a 0.01 s Delay counts down once a frame (DelayAction.h:27-30), so these loops run at most once a frame, not 100 times a second", why: "Q-LITERAL on the delays: where do these times come from, should the 0.01 s loops be timers or Tick, and who may change them?",
+     effect: {absent: "the timings are the author's design numbers: the code holds them, it cannot say who may change them"}}
+  - {id: IR-EN-7, kind: inferred, text: "Every reach and strength in combat is a named design value: 1300 units to see and poison the player, 80- and 450-unit sweeps, three burns 2 s apart, a 4 s freeze and 3 s before the next, a 3 s gap between toxic hits, a burn sound at half volume and a turn speed of 100", measure: "1300 at Check_Player_Range#s1 and Toxic_Hit#s9; 80 at Swing_down#s20/#s37 and Punch#s20/#s37, 450 at War_Cry#s17; 3 at AbilityDamageInfo#s15/#s30; 4 and 3 at FrozeActor#s16/#s18; 3 at Toxic_Hit#s14; 0.5 at AbilityDamageInfo#s4; 100 at FacePlayer#s1. The burn deals three hits, at 0, 2 and 4 s, while the author's note says 'Burn damage every two seconds for six seconds'", why: "Q-LITERAL on the combat numbers: where do they come from, should the range be one value (it is written twice), and is the burn three hits over 4 s or over 6 s?",
+     effect: {absent: "the numbers are the author's design: the code holds them, it cannot say which is meant"}}
+  - {id: IR-EN-8, kind: inferred, text: "How much stronger an enemy comes back is a named design value: +40% health, fire resistance 0.5, +30% speed, 3 attacks, +2 skill slots, 20 to 45 more health, Black Thumb's half again of damage for 15 particle bursts", measure: "0.4 at Death#s4, 0.5 at Death#s7, 0.3 at Death#s8, 3 at Death#s18, 2 at Death#s11/#s20/#s28, 20 and 45 at Set_Reincarnated_Stats#s4 and Level_Up#s3, 0.5 at Blackthumb#s5, 15 at Enraged_Particles#s6", why: "Q-LITERAL on the growth numbers: where do they come from, and should they live in the EnemyInfo_DT data table with the other stats?",
+     effect: {absent: "the growth numbers are the author's design: nothing to assert before it is said"}}
+  - {id: IR-EN-9, kind: inferred, text: "How the enemy is drawn and put back on its feet is named design values: the dissolve's 0.005 step and its end at -0.5, the landing sweep's 40, 100 and 5 tries, and the reset's 100 up", measure: "0.005 at DisolveTimer#s8/#s17/#s26/#s35, -0.5 at #s7/#s16/#s25/#s34; 40 at Landed#s8, 100 at #s11, 5 at #s10 and the sweeps' DrawTime 5 at #s1/#s13/#s17 (drawn only with a debug trace, which is None); 100 at Reset_Character#s3", why: "Q-LITERAL on the presentation numbers: where do they come from, and who may change them?",
+     effect: {absent: "the presentation numbers are the author's design"}}
+  - {id: IR-EN-10, kind: inferred, text: "A second death by the same element must not count a skill it does not add: today Death adds 2 to SkillCounter whatever the stat checker did, so a repeated element moves the count past the pair it filled, and past 6 the inspect panel stops showing skills 1 and 2", measure: "SkillCounter + 2 at Death#s11/#s20/#s28 after FireStatChecker/IceStatChecker/NatureStatChecker, which change nothing once HasBeenKilledBy... is set (EN-32); InspectInfo#s5 shows skills 1 and 2 only while SkillCounter <= 6", why: "Q-WRITE SkillCounter: should a repeated element add no skill slot, and what should the panel show after four deaths?",
+     effect: {absent: "what a repeated death should give is the owner's design"}}
+  - {id: IR-EN-11, kind: inferred, text: "Can_War_Cry decides whether the enemy can war cry: today it is set and recorded but nothing in the paste reads it, and War Cry runs whenever Attack_Index is 3, which needs Max_Number_of_attacks of 3 or more", measure: "Can_War_Cry written at Death#s17, Set_Stats#s13, Set_Reincarnated_Stats#s15 and read only into the record (ReincarnatedStatsEvent#s9); War_Cry() at Attack_Combo#s38 on index 3; Max_Number_of_attacks <- 3 at Death#s18", why: "Q-WRITE Can_War_Cry: is the war cry meant to be gated by Can_War_Cry, by the attack count, or both?",
+     effect: {absent: "which flag gates the war cry is the owner's design"}}
+  - {id: IR-EN-12, kind: inferred, text: "Material_1 keeps one meaning: today setting up stores the mesh's material 1 in it, and freezing overwrites it with material 0, which Unfreeze puts back on slot 0", measure: "Material_1 <- Mesh.GetMaterial(1) at Check_For_Reincarnation#s6/#s11; Material_1 <- Mesh.GetMaterial(0) at FrozeActor#s11; Mesh.SetMaterial(0, Material_1) at Unfreeze#s2", why: "Q-WRITE Material_1: which material is it meant to hold, and is the setup's material 1 used anywhere this paste does not show?",
+     effect: {absent: "which material the variable holds is the owner's to say"}}
+  - {id: IR-EN-13, kind: inferred, text: "The SlimeBall that Spit spawns does the spit's damage: Spit computes DamageWithStats and nothing in the paste passes it on", measure: "DamageWithStats at Spit#s10/#s21; SpawnActor(SlimeBall) at Spit#s20/#s31 with no damage argument; the SlimeBall's Blueprint is not in the paste", why: "Q-WRITE DamageWithStats: does the SlimeBall read the enemy's DamageWithStats, and is the spit's damage its row (Spit) plus the enemy's Damage like the other attacks?",
+     effect: {absent: "the SlimeBall's Blueprint is not in the paste"}}
+  - {id: IR-EN-14, kind: inferred, text: "Which attack comes next is a choice the owner states: today the roll runs from 0 to Max_Number_of_attacks (both ends included), an index above 3 attacks with nothing, and an enemy never attacks a player whose Health is 1 or less", measure: "RandomIntegerInRange(0, Max_Number_of_attacks) at Attack_Combo#s3 (inclusive, UnrealMathUtility.h:289-293); the switch's default section is empty (Attack_Combo#s4:k5); if Player_Character.Health > 1 at #s2", why: "Q-ELSE Attack_Combo#s2: should an enemy stop attacking at 1 health, what is Max_Number_of_attacks in the data table, and should a roll above 3 be possible at all?",
+     effect: {absent: "the attack table's design is the owner's"}}
+  - {id: IR-EN-15, kind: inferred, text: "One rule is written once: Swing_down and Punch differ only in their row and montage, and FireStatChecker, IceStatChecker and NatureStatChecker only in their flag and two textures", measure: "Swing_down and Punch, 39 statements each, the same apart from K2Node_GetDataTableRow_2/_3 (SwingDown, Punch) and K2Node_PlayMontage_2/_3; FireStatChecker, IceStatChecker, NatureStatChecker, 10 statements each, the same apart from HasBeenKilledBy... and the two SystemMenagerie_UI_Layout_ textures", why: "Q-DUP: should each be one function taking the row and montage (or the element), so a fix is made once?",
+     effect: {absent: "merging them changes the code's shape, not what it does: the owner's call"}}
+  - {id: IR-EN-16, kind: inferred, text: "The enemy works only with the classes it casts to: a player character that is not a BP_LearningKit_PlayerCharacter, or widgets that are not a DamageIndicator_UI and an AI_Healthbar, leave it with no reference, and every later read through it fails", measure: "the three nested casts at ReceiveBeginPlay#s1/#s3/#s5, each doing nothing on its else side; Player_Character is read in 17 graphs", why: "Q-ELSE on the three casts: is a failed cast a set-up error to report, or a case the enemy should handle?",
+     effect: {absent: "the classes are set by the game mode and the Blueprint's components, which the paste does not carry"}}
+  - {id: IR-EN-17, kind: inferred, text: "The stats and damage live in data tables: the row Boss_Enemy of EnemyInfo_DT, and the rows SwingDown, Punch, Spit and Toxic of EnemyAttacks_DT", measure: "the data table and row on the pins of K2Node_GetDataTableRow_0-_4 (Set_Stats#s1, Swing_down#s8, Punch#s8, Spit#s8, Toxic_Hit#s11); the tables are assets the paste does not carry, and a missing row fires nothing (RowNotFound unwired on all five)", why: "what are the rows' values, and should a missing row be reported instead of leaving the attack unfinished?",
+     effect: {absent: "the data tables are assets the paste does not carry"}}
+  - {id: IR-EN-18, kind: inferred, text: "With several enemies near, one of them decides the player's inspect prompt: today each enemy shows the player's InspectEnemy and sets Can_inspect every frame it is in range, and hides them once when it leaves", measure: "Check_Player_Range#s4/#s5 every frame in range, #s12/#s13 once on leaving, and TakenDamage#s12/#s14 on death - all on the one player character", why: "Q-WRITE Player_Character.Can_inspect: which enemy is the one being inspected, and should leaving or dying hide the prompt another enemy still needs?",
+     effect: {absent: "how several enemies share the player's one prompt is the owner's design"}}
+  - {id: IR-EN-19, kind: inferred, text: "Each kill blow is named: the paste only knows the values of Kill_Blow_Type as NewEnumerator0 to NewEnumerator3", measure: "KillBlowType_E.NewEnumerator0-3 at Death#s3/#s6/#s15/#s24, DisolveTimer#s4/#s13/#s22/#s31, TakenDamage#s24, AbilityDamageInfo#s12/#s27; by what each does, 1 is fire (the burn records it), 2 ice and 3 nature; 0 adds health and no skill", why: "the enum's display names are not in the paste: what is NewEnumerator0, and are 1-3 fire, ice and nature?",
+     effect: {absent: "the enum asset is not in the paste"}}
+  - {id: IR-EN-20, kind: inferred, text: "One name means one thing: DamageIndicator is both the widget component the damage numbers show on and the interface that hits are sent through, and Blackthumb is both a flag and an event", measure: "DamageIndicator.GetWidget() at ReceiveBeginPlay#s3 and DamageIndicator.K2_SetWorldRotation at ReceiveTick#s3 (the component); DoesImplementInterface(..., DamageIndicator) at Swing_down#s25, Punch#s25, Toxic_Hit#s10 (the interface /Game/SystemMenagerie/MagicSystem/PrimaryWeapons/DamageIndicator); if Blackthumb at TakenDamage#s23, Blackthumb() at #s25", why: "rename one of each pair, so a reader and a search tool can tell them apart?",
+     effect: {absent: "names are the owner's to choose"}}

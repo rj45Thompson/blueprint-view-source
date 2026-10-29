@@ -1,0 +1,340 @@
+# The enemy's use cases, read top down from the epic. Each step's `code:` cites the converted graph it realises (tools/logic_map.py
+# resolves every cite and writes the code spaces in generated.yaml): `Alias` a graph (its top statements), `Alias#sN` a statement,
+# `Alias#sN:then|else|kNN` one outcome of a decision (its body). An extension's cites are the outcome that takes that pathway. The
+# eight DoOnce tests on the literal false are excluded in ../exclusions.yaml with the reason; their else sides are cited here.
+usecases:
+  - id: EPIC-EN
+    name: Fight an enemy of the Antagonist combat system
+    level: kite
+    actor: P1
+    supporting: [SYS-EN, SYS-PC, SYS-LVL, SYS-UE]
+    trigger: "the level starts an enemy, new or reincarnated"
+    pre: "the level holds the enemy and the player's character; the enemy's components, data tables and the player's Blueprint exist (none is in the paste)"
+    minimal: "a dead enemy stops acting, and a fight can start again with it"
+    success: "the player sees the enemy roam, chase and attack, hits it with spells until it dies, and meets it again stronger"
+    why: "an enemy that learns from how it was killed is the system's point: each death decides its next life"
+    gulf:
+      exec: {text: "moves near the enemy, casts spells and whips it, and inspects it", reqs: [EN-20, EN-17, EN-35]}
+      eval: {text: "sees the enemy chase and attack, the damage numbers, the outline, the dissolve and the stronger return", reqs: [EN-9, EN-20, EN-14, EN-34, EN-31]}
+    steps:
+      - {do: "The enemy enters the fight and roams", reqs: [EN-1, EN-2, EN-6]}
+      - {do: "It sees the player, chases and attacks", reqs: [EN-7, EN-8, EN-9]}
+      - {do: "While the player is near, it shows its name and health and watches the player every frame", reqs: [EN-14, EN-15]}
+      - {do: "The player hits it with spells: damage, burning, freezing and the vine whip", reqs: [EN-20, EN-23, EN-25, EN-17]}
+      - {do: "Hurt, it fights back with its own powers: Black Thumb and poison", reqs: [EN-27, EN-29]}
+      - {do: "At no health it dies, dissolves in the colour of the kill blow and comes back stronger", reqs: [EN-21, EN-30, EN-31, EN-34]}
+      - {do: "The player inspects it", reqs: [EN-35]}
+      - {do: "It levels up", reqs: [EN-36]}
+    ext:
+      - {at: 6, when: "the survive roll is not 1", do: ["the enemy is destroyed - it never is: the roll is between 1 and 1"], out: end minimal, reqs: [EN-30, IR-EN-1]}
+
+  - id: UC-EN1
+    name: Set up an enemy as it enters the fight
+    level: fish
+    parent: {uc: EPIC-EN, step: 1}
+    actor: SYS-EN
+    supporting: [SYS-LVL, SYS-UE]
+    trigger: "play begins for the enemy, and the level Blueprint tells it to check for reincarnation or to ambush"
+    pre: "the level holds the enemy and the player's character (the level Blueprint is another paste)"
+    minimal: "the enemy holds its references and its stats"
+    success: "a new enemy roams with its level and name on show; a reincarnated one stands with its record's stats"
+    why: "every later graph reads the references and the stats set here"
+    steps:
+      - {do: "Play begins: the enemy keeps the player's character, then its damage indicator widget, then its health bar widget", reqs: [EN-1, IR-EN-20], code: ["ReceiveBeginPlay", "ReceiveBeginPlay#s1:then", "ReceiveBeginPlay#s3:then", "ReceiveBeginPlay#s5:then"]}
+      - {do: "Told to check for reincarnation, a new enemy reads its stats from its data table row", reqs: [EN-2, EN-3, IR-EN-17], code: ["Check_For_Reincarnation", "Check_For_Reincarnation#s1:else", "Set_Stats"]}
+      - {do: "It shows its level and name, walks at its speed and starts to roam", reqs: [EN-2]}
+    ext:
+      - {at: 1, when: "the player's character is not a BP_LearningKit_PlayerCharacter, or a widget is not the class cast to", do: ["the chain of references stops there, and every later read through it fails"], out: end minimal, reqs: [IR-EN-16], code: ["ReceiveBeginPlay#s1:else", "ReceiveBeginPlay#s3:else", "ReceiveBeginPlay#s5:else"]}
+      - {at: 2, when: "the enemy is Reincarnated", do: ["it takes its stats from its EnemyInfo record, one level up and with 20 to 45 more health, and does not start to roam"], out: end success, reqs: [EN-2, EN-4], code: ["Check_For_Reincarnation#s1:then", "Set_Reincarnated_Stats"]}
+      - {at: 3, when: "the level starts it with an ambush instead", do: ["it plays its ambush montage and roams"], out: end success, reqs: [EN-5, IR-EN-4], code: ["Ambush_Intro"]}
+
+  - id: UC-EN2
+    name: Roam until the player is seen
+    level: fish
+    parent: {uc: EPIC-EN, step: 1}
+    actor: SYS-EN
+    supporting: [SYS-UE]
+    trigger: "the enemy is told to roam: after setting up, an ambush, a reset or a failed chase"
+    pre: "the level has a navigation area the move can use (not in the paste)"
+    minimal: "a knocked-down enemy stays where it is"
+    success: "the enemy wanders from point to point until its sensor sees the player"
+    why: "an enemy that wanders is found by the player, and finds the player"
+    steps:
+      - {do: "An enemy that was not knocked down and does not see the player moves to a random reachable point within 2500 units of where it stands", reqs: [EN-6], code: ["Random_Roam", "Random_Roam#s1:else", "Random_Roam#s2:else"]}
+      - {do: "Arriving, it waits 1 s and roams again", reqs: [EN-6, IR-EN-6], code: ["Random_Roam#s6", "Random_Roam#s7", "Random_Roam#s8"]}
+      - {do: "Its pawn sensor sees the player: it marks the player seen and follows", reqs: [EN-7], code: ["OnSeePawn(PawnSensing)", "OnSeePawn(PawnSensing)#s2:then"]}
+    ext:
+      - {at: 1, when: "the enemy was knocked down by the whip and has landed (WasAttched)", do: ["it does not roam until it is reset"], out: end minimal, reqs: [EN-6], code: ["Random_Roam#s1:then"]}
+      - {at: 1, when: "it already sees the player", do: ["it follows the player instead"], out: end success, reqs: [EN-6, EN-8], code: ["Random_Roam#s2:then"]}
+      - {at: 2, when: "the move fails and the enemy is Frozen", do: ["it waits 0.8 s and tests Frozen again"], out: rejoin 2, reqs: [EN-6, IR-EN-6], code: ["Random_Roam#s10", "Random_Roam#s11", "Random_Roam#s11:then"]}
+      - {at: 2, when: "the move fails and the enemy is not frozen", do: ["it roams again at once"], out: rejoin 1, reqs: [EN-6], code: ["Random_Roam#s11:else"]}
+      - {at: 3, when: "the sensor sees a pawn that is not the player while the enemy was seeing the player", do: ["it stops seeing the player"], out: rejoin 1, reqs: [EN-7], code: ["OnSeePawn(PawnSensing)#s2:else", "OnSeePawn(PawnSensing)#s5:then"]}
+      - {at: 3, when: "the pawn is not the player and the enemy was not seeing the player", do: ["nothing changes"], out: rejoin 1, reqs: [EN-7], code: ["OnSeePawn(PawnSensing)#s5:else"]}
+
+  - id: UC-EN3
+    name: Chase the player
+    level: fish
+    parent: {uc: EPIC-EN, step: 2}
+    actor: SYS-EN
+    supporting: [SYS-UE]
+    trigger: "the enemy sees the player, or finishes an attack still seeing the player"
+    pre: "the enemy holds the pawn it saw (Seen_Pawn)"
+    minimal: "an enemy that does not see the player may not attack"
+    success: "the enemy reaches the player and starts one attack combo"
+    why: "the enemy has to reach the player to hurt them"
+    steps:
+      - {do: "Seeing the player, the enemy may attack, and moves to within 40 units of the pawn it saw", reqs: [EN-8], code: ["Follow_Player", "Follow_Player#s1:then", "Follow_Player#s3:then"]}
+      - {do: "Arriving while it may attack, it runs one attack combo at a time", reqs: [EN-8, IR-EN-5], code: ["Follow_Player#s6", "Follow_Player#s7", "Follow_Player#s7:then", "Follow_Player#s8:then", "Follow_Player#s10:else", "Follow_Player#s12:then"]}
+    ext:
+      - {at: 1, when: "it no longer sees the player", do: ["it may not attack"], out: end minimal, reqs: [EN-8], code: ["Follow_Player#s1:else"]}
+      - {at: 1, when: "the pawn it saw is no longer valid", do: ["it does not move"], out: end minimal, reqs: [EN-8], code: ["Follow_Player#s3:else"]}
+      - {at: 1, when: "the move fails", do: ["it stops seeing the player and roams"], out: end minimal, reqs: [EN-8], code: ["Follow_Player#s18", "Follow_Player#s19", "Follow_Player#s20"]}
+      - {at: 2, when: "it may no longer attack", do: ["nothing more happens"], out: end minimal, reqs: [EN-8], code: ["Follow_Player#s7:else"]}
+      - {at: 2, when: "a combo is already running (its DoOnce is closed)", do: ["this arrival starts none"], out: end success, reqs: [EN-8], code: ["Follow_Player#s8:else", "Follow_Player#s12:else"]}
+
+  - id: UC-EN4
+    name: Attack the player with a random combo
+    level: fish
+    parent: {uc: EPIC-EN, step: 2}
+    actor: SYS-EN
+    supporting: [SYS-PC, SYS-UE]
+    trigger: "the enemy arrives at the player while it may attack"
+    pre: "the attack montages, the EnemyAttacks_DT rows and the SlimeBall exist (assets the paste names but does not hold)"
+    minimal: "an enemy whose animation is not done waits"
+    success: "one attack plays, a hit costs the target its damage, and the enemy follows or roams on"
+    why: "the attacks are the enemy's threat"
+    steps:
+      - {do: "With its last animation done and the player's health above 1, the enemy rolls an attack from 0 to Max_Number_of_attacks", reqs: [EN-9, IR-EN-14], code: ["Attack_Combo", "Attack_Combo#s1:then", "Attack_Combo#s2:then"]}
+      - {do: "Index 0 or 1: Swing down or Punch - its damage row and montage, at the notify a sweep in front, and a hit actor takes the damage", reqs: [EN-9, EN-10, EN-13, IR-EN-15], code: ["Attack_Combo#s4:k7", "Attack_Combo#s4:k17", "Swing_down", "Swing_down#s1:then", "Swing_down#s3:else", "Swing_down#s5:then", "Swing_down#s9:then", "Swing_down#s9:else", "Swing_down#s22:then", "Swing_down#s25:then", "Swing_down#s39:then", "Swing_down#s42:then", "Swing_down#s13", "Swing_down#s14", "Swing_down#s15", "Swing_down#s16", "Swing_down#s18", "Swing_down#s19", "Swing_down#s20", "Swing_down#s21", "Swing_down#s22", "Swing_down#s30", "Swing_down#s31", "Swing_down#s32", "Swing_down#s33", "Swing_down#s35", "Swing_down#s36", "Swing_down#s37", "Swing_down#s38", "Swing_down#s39", "Punch", "Punch#s1:then", "Punch#s3:else", "Punch#s5:then", "Punch#s9:then", "Punch#s9:else", "Punch#s22:then", "Punch#s25:then", "Punch#s39:then", "Punch#s42:then", "Punch#s13", "Punch#s14", "Punch#s15", "Punch#s16", "Punch#s18", "Punch#s19", "Punch#s20", "Punch#s21", "Punch#s22", "Punch#s30", "Punch#s31", "Punch#s32", "Punch#s33", "Punch#s35", "Punch#s36", "Punch#s37", "Punch#s38", "Punch#s39", "FacePlayer"]}
+      - {do: "Index 2: Spit - a SlimeBall is spawned at Arrow2", reqs: [EN-9, EN-11, IR-EN-13], code: ["Attack_Combo#s4:k27", "Spit", "Spit#s2:then", "Spit#s4:else", "Spit#s6:then", "Spit#s9:then", "Spit#s9:else", "Spit#s13", "Spit#s14", "Spit#s15", "Spit#s16", "Spit#s18", "Spit#s19", "Spit#s20", "Spit#s24", "Spit#s25", "Spit#s26", "Spit#s27", "Spit#s29", "Spit#s30", "Spit#s31"]}
+      - {do: "Index 3: War Cry - a scream that stuns every stunnable pawn within 450 units", reqs: [EN-9, EN-12, IR-EN-11], code: ["Attack_Combo#s4:k37", "War_Cry", "War_Cry#s2:then", "War_Cry#s4:else", "War_Cry#s6:then", "War_Cry#s19:then", "War_Cry#s22:then", "War_Cry#s10", "War_Cry#s11", "War_Cry#s12", "War_Cry#s13", "War_Cry#s15", "War_Cry#s16", "War_Cry#s17", "War_Cry#s18", "War_Cry#s19"]}
+      - {do: "Once the attack's animation is done, the enemy follows the player if it still sees it", reqs: [EN-9], code: ["Attack_Combo#s9:then", "Attack_Combo#s10:then", "Attack_Combo#s19:then", "Attack_Combo#s20:then", "Attack_Combo#s29:then", "Attack_Combo#s30:then", "Attack_Combo#s39:then", "Attack_Combo#s40:then"]}
+    ext:
+      - {at: 1, when: "the last animation is not done", do: ["it waits 0.2 s and tests again"], out: rejoin 1, reqs: [EN-9, IR-EN-6], code: ["Attack_Combo#s1:else"]}
+      - {at: 1, when: "the player's Health is 1 or less", do: ["no attack"], out: end minimal, reqs: [EN-9, IR-EN-14], code: ["Attack_Combo#s2:else"]}
+      - {at: 1, when: "the roll is above 3", do: ["no attack: the switch's default section is empty"], out: end minimal, reqs: [EN-9, IR-EN-14], code: ["Attack_Combo#s4:k5"]}
+      - {at: 2, when: "the attack is already running (its DoOnce is closed)", do: ["this call does nothing"], out: rejoin 5, reqs: [EN-10, EN-11, EN-12], code: ["Swing_down#s1:else", "Swing_down#s5:else", "Punch#s1:else", "Punch#s5:else", "Spit#s2:else", "Spit#s6:else", "War_Cry#s2:else", "War_Cry#s6:else"]}
+      - {at: 2, when: "the sweep hits nothing, or what it hits does not implement DamageIndicator", do: ["no damage is dealt"], out: rejoin 5, reqs: [EN-10], code: ["Swing_down#s22:else", "Swing_down#s25:else", "Swing_down#s39:else", "Swing_down#s42:else", "Punch#s22:else", "Punch#s25:else", "Punch#s39:else", "Punch#s42:else"]}
+      - {at: 4, when: "the scream hits nothing that can be stunned", do: ["nobody is stunned"], out: rejoin 5, reqs: [EN-12], code: ["War_Cry#s19:else", "War_Cry#s22:else"]}
+      - {at: 5, when: "the animation is not done yet", do: ["it waits 0.2 s and tests again"], out: rejoin 5, reqs: [EN-9, IR-EN-6], code: ["Attack_Combo#s9:else", "Attack_Combo#s19:else", "Attack_Combo#s29:else", "Attack_Combo#s39:else"]}
+      - {at: 5, when: "it no longer sees the player", do: ["it roams and may not attack"], out: end success, reqs: [EN-9], code: ["Attack_Combo#s10:else", "Attack_Combo#s20:else", "Attack_Combo#s30:else", "Attack_Combo#s40:else"]}
+
+  - id: UC-EN5
+    name: Keep watch on the player every frame
+    level: fish
+    parent: {uc: EPIC-EN, step: 3}
+    actor: SYS-EN
+    supporting: [SYS-PC, SYS-UE]
+    trigger: "every frame (Tick)"
+    pre: "the enemy holds the player's character (UC-EN1)"
+    minimal: "a dead enemy does nothing"
+    success: "the player sees the enemy's name, health bar and outline when they should"
+    why: "the player reads the enemy from what it shows"
+    steps:
+      - {do: "Every frame a living enemy checks the player's range and turns its damage numbers to the player's camera", reqs: [EN-14, IR-EN-5], code: ["ReceiveTick", "ReceiveTick#s1:else"]}
+      - {do: "Within 1300 units it shows its name, marks the player in range and lets the player inspect it", reqs: [EN-15, IR-EN-18, IR-EN-3], code: ["Check_Player_Range", "Check_Player_Range#s1:then"]}
+      - {do: "Its name turns to the player and its health bar follows its health, at most once a frame", reqs: [EN-16, IR-EN-6], code: ["Rotate_Text", "Rotate_Text#s4:then"]}
+      - {do: "While the player locks on to a target, the enemy draws an outline", reqs: [EN-14, IR-EN-3], code: ["ReceiveTick#s4:then"]}
+    ext:
+      - {at: 1, when: "the enemy is Dead", do: ["nothing happens this frame"], out: end minimal, reqs: [EN-14], code: ["ReceiveTick#s1:then"]}
+      - {at: 2, when: "the player is beyond 1300 units and was in range", do: ["the name, the prompt and the player's inspect flag are taken away, and the player's own material goes back on if the toxic one was on"], out: end success, reqs: [EN-15, EN-29], code: ["Check_Player_Range#s1:else", "Check_Player_Range#s9:then"]}
+      - {at: 2, when: "the player is beyond 1300 units and was not in range", do: ["nothing changes"], out: end success, reqs: [EN-15], code: ["Check_Player_Range#s9:else"]}
+      - {at: 3, when: "the player has left the range", do: ["the loop stops"], out: end success, reqs: [EN-16], code: ["Rotate_Text#s4:else"]}
+      - {at: 4, when: "the player is not locking on", do: ["the vine whip is checked instead"], out: end success, reqs: [EN-17], code: ["ReceiveTick#s4:else"]}
+
+  - id: UC-EN6
+    name: Hit the enemy with a spell
+    level: sea
+    parent: {uc: EPIC-EN, step: 4}
+    actor: P1
+    supporting: [SYS-EN, SYS-PC]
+    trigger: "the player's spell hits the enemy (the player's Blueprint calls TakenDamage)"
+    pre: "the player has a spell selected (its SpellInfo), and the enemy holds the player's character"
+    minimal: "a dead enemy ignores the hit"
+    success: "the enemy loses the spell's damage, shown in its colour, and falls at no health"
+    why: "hurting the enemy is how the player wins the fight"
+    gulf:
+      exec: {text: "casts a spell at the enemy", reqs: [EN-20]}
+      eval: {text: "sees the damage in the spell's colour, the enemy turn to them, and, at no health, the enemy fall", reqs: [EN-20, EN-21]}
+    steps:
+      - {do: "The player's spell hits a living enemy: the player is put in combat and the enemy turns to the player", reqs: [EN-20, EN-13, IR-EN-2], code: ["TakenDamage", "TakenDamage#s1:else"]}
+      - {do: "The damage shows in the spell's colour and the spell's damage is taken from the enemy's health", reqs: [EN-20, IR-EN-2, IR-EN-20]}
+      - {do: "At 0 health or below the enemy is dead: the player's combat and inspection end, and it falls, dissolves and dies", reqs: [EN-21], code: ["TakenDamage#s7:then", "TakenDamage#s15:then", "TakenDamage#s15:else"]}
+    ext:
+      - {at: 1, when: "the enemy is already dead", do: ["the hit is ignored"], out: end minimal, reqs: [EN-20], code: ["TakenDamage#s1:then"]}
+      - {at: 3, when: "the enemy survives the hit, has Black Thumb, and the spell's kill blow is NewEnumerator3", do: ["it enrages"], out: end success, reqs: [EN-22, IR-EN-19], code: ["TakenDamage#s7:else", "TakenDamage#s23:then", "TakenDamage#s24:then"]}
+      - {at: 3, when: "it survives without Black Thumb, or the spell is another kill blow", do: ["nothing more"], out: end success, reqs: [EN-22], code: ["TakenDamage#s23:else", "TakenDamage#s24:else"]}
+
+  - id: UC-EN7
+    name: Burn the enemy
+    level: fish
+    parent: {uc: EPIC-EN, step: 4}
+    actor: SYS-EN
+    supporting: [SYS-PC]
+    trigger: "the player's fire sets the enemy burning (Burning)"
+    pre: "the player's AbilityInfo holds the burn's damage (the player's Blueprint)"
+    minimal: "an enemy already burning starts no second burn"
+    success: "the enemy takes three burns, 2 s apart, and the fires go out"
+    why: "fire hurts over time, and a fire-resistant enemy takes less"
+    steps:
+      - {do: "An enemy not already burning catches two fires and takes a burn", reqs: [EN-23], code: ["Burning", "Burning#s1:then", "Burning#s3:else", "Burning#s5:then"]}
+      - {do: "Each burn puts the player in combat, reads the player's burn damage and plays the burn sound", reqs: [EN-24, IR-EN-3], code: ["AbilityDamageInfo", "Set_Ability_Info"]}
+      - {do: "The burn is shown and taken from health, three times, 2 s apart", reqs: [EN-24, IR-EN-7], code: ["AbilityDamageInfo#s5:else", "AbilityDamageInfo#s25:else", "AbilityDamageInfo#s30:then", "AbilityDamageInfo#s30:else"]}
+      - {do: "With the count back at 0 the fires go out and it can burn again", reqs: [EN-23], code: ["Burning#s12:then"]}
+    ext:
+      - {at: 1, when: "it is already burning", do: ["nothing new starts"], out: end minimal, reqs: [EN-23], code: ["Burning#s1:else", "Burning#s5:else"]}
+      - {at: 2, when: "the enemy is Fire_Resistant", do: ["the burn damage is multiplied by its resistance first"], out: rejoin 3, reqs: [EN-24, EN-31], code: ["AbilityDamageInfo#s5:then", "AbilityDamageInfo#s10:else", "AbilityDamageInfo#s15:then", "AbilityDamageInfo#s15:else"]}
+      - {at: 3, when: "a burn takes its last health", do: ["the player's combat ends, the fire kill blow is recorded and the enemy dies"], out: end success, reqs: [EN-24], code: ["AbilityDamageInfo#s10:then", "AbilityDamageInfo#s25:then"]}
+      - {at: 4, when: "the count is not back at 0", do: ["the fires wait 0.2 s and test again"], out: rejoin 4, reqs: [EN-23, IR-EN-6], code: ["Burning#s12:else"]}
+
+  - id: UC-EN8
+    name: Freeze the enemy
+    level: fish
+    parent: {uc: EPIC-EN, step: 4}
+    actor: SYS-EN
+    trigger: "the player's ice freezes the enemy (FrozeActor)"
+    pre: "the Frozen system and the Ice_Axe and Large_Ice materials exist (assets the paste names)"
+    minimal: "an enemy that cannot be frozen is not"
+    success: "the enemy stands frozen for 4 s, thaws, and can be frozen again 3 s later"
+    why: "ice holds an enemy still for a while"
+    steps:
+      - {do: "An enemy that can be frozen is marked Frozen", reqs: [EN-25], code: ["FrozeActor", "FrozeActor#s1:then", "FrozeActor#s3:then", "FrozeActor#s5:else"]}
+      - {do: "Unless frozen already, it turns to ice and its time stops for 4 s", reqs: [EN-25, IR-EN-7], code: ["FrozeActor#s7:then"]}
+      - {do: "It thaws: its materials and its time come back", reqs: [EN-26, IR-EN-12], code: ["Unfreeze"]}
+      - {do: "3 s later it can be frozen again", reqs: [EN-25]}
+    ext:
+      - {at: 1, when: "it can no longer be frozen (an ice death took it away)", do: ["nothing happens"], out: end minimal, reqs: [EN-25, EN-31], code: ["FrozeActor#s1:else"]}
+      - {at: 2, when: "it is frozen already", do: ["the freeze is not started again"], out: end minimal, reqs: [EN-25], code: ["FrozeActor#s3:else", "FrozeActor#s7:else"]}
+      - {at: 2, when: "it is roaming and a move fails while it is frozen", do: ["it waits for the thaw before roaming on"], out: rejoin 3, reqs: [EN-6]}
+
+  - id: UC-EN9
+    name: Knock the enemy down with the vine whip
+    level: fish
+    parent: {uc: EPIC-EN, step: 4}
+    actor: SYS-EN
+    supporting: [SYS-PC]
+    trigger: "the player whips (IsWhipping) while not locking on"
+    pre: "the player's Blueprint sets IsWhipping (not in the paste)"
+    minimal: "an enemy that has not landed stays down"
+    success: "the enemy falls, lands, and is put back on its feet to roam"
+    why: "the whip throws the enemy and costs it time"
+    steps:
+      - {do: "While the player is whipping, the enemy loses its outline and falls under physics", reqs: [EN-17, IR-EN-3], code: ["ReceiveTick#s6:then"]}
+      - {do: "4 s later it checks whether it landed: a sweep at its mesh finds the ground and keeps where", reqs: [EN-17, EN-18, IR-EN-6], code: ["Landed", "Landed#s3:then"]}
+      - {do: "With the whip over, a landed enemy is put back on its feet above that point and roams", reqs: [EN-17, EN-19, IR-EN-9], code: ["ReceiveTick#s6:else", "ReceiveTick#s11:then", "Reset_Character"]}
+    ext:
+      - {at: 2, when: "the sweep finds nothing", do: ["the try is counted, on the fifth the radius grows to 100, and 0.8 s later it sweeps again"], out: rejoin 2, reqs: [EN-18, IR-EN-9], code: ["Landed#s3:else", "Landed#s10:then", "Landed#s10:else"]}
+      - {at: 3, when: "the enemy has not landed", do: ["nothing happens this frame"], out: end minimal, reqs: [EN-17], code: ["ReceiveTick#s11:else"]}
+
+  - id: UC-EN10
+    name: Enrage with Black Thumb
+    level: fish
+    parent: {uc: EPIC-EN, step: 5}
+    actor: SYS-EN
+    trigger: "a nature hit the enemy survives, when it has Black Thumb"
+    pre: "the enemy has Blackthumb (from its data table row or a nature death)"
+    minimal: "an enemy already enraged starts no second rage"
+    success: "the enemy hits harder for 15 bursts of its shockwave, then calms"
+    why: "Black Thumb turns the player's nature magic against them for a while"
+    steps:
+      - {do: "An enemy not yet enraged is marked BlackThumb_Active, shows 'Black Thumb' in black, and hits half as hard again", reqs: [EN-27, IR-EN-8, IR-EN-20], code: ["Blackthumb", "Blackthumb#s1:else"]}
+      - {do: "A shockwave bursts at its pelvis; a new one follows each time the last is gone", reqs: [EN-28, IR-EN-6], code: ["Enraged_Particles", "Enraged_Particles#s3:then", "Enraged_Particles#s3:else", "Enraged_Particles#s6:else"]}
+      - {do: "After 15 bursts the rage ends", reqs: [EN-28, IR-EN-8], code: ["Enraged_Particles#s6:then"]}
+    ext:
+      - {at: 1, when: "it is enraged already", do: ["nothing new starts"], out: end minimal, reqs: [EN-27], code: ["Blackthumb#s1:then"]}
+
+  - id: UC-EN11
+    name: Poison the player
+    level: fish
+    parent: {uc: EPIC-EN, step: 5}
+    actor: SYS-EN
+    supporting: [SYS-PC]
+    trigger: "a frame of a Toxic enemy with the player within 1300 units"
+    pre: "the enemy is Toxic (from its data table row or a nature death)"
+    minimal: "an enemy that is not Toxic does nothing to the player"
+    success: "the player is marked and loses the Toxic row's damage every 3 s while in range"
+    why: "a toxic enemy is dangerous to stand near"
+    steps:
+      - {do: "A Toxic enemy in range reaches for the player", reqs: [EN-29], code: ["Check_Player_Range#s7:then", "Toxic_Hit"]}
+      - {do: "The first time, the player's mesh takes the toxic material", reqs: [EN-29, IR-EN-3], code: ["Toxic_Hit#s1:else"]}
+      - {do: "After that, one at a time, the player takes the Toxic row's damage and the poison rests 3 s", reqs: [EN-29, IR-EN-7, IR-EN-17], code: ["Toxic_Hit#s1:then", "Toxic_Hit#s2:then", "Toxic_Hit#s4:else", "Toxic_Hit#s6:then", "Toxic_Hit#s8:then", "Toxic_Hit#s9:then", "Toxic_Hit#s10:then"]}
+      - {do: "When the player leaves the range their own material comes back", reqs: [EN-29], code: ["Check_Player_Range#s14:then"]}
+    ext:
+      - {at: 1, when: "the enemy is not Toxic", do: ["nothing"], out: end minimal, reqs: [EN-29], code: ["Check_Player_Range#s7:else"]}
+      - {at: 3, when: "a poison hit is already running, Toxic is off, the player is beyond 1300 units, or the player does not implement DamageIndicator", do: ["no damage this time"], out: end minimal, reqs: [EN-29], code: ["Toxic_Hit#s2:else", "Toxic_Hit#s6:else", "Toxic_Hit#s8:else", "Toxic_Hit#s9:else", "Toxic_Hit#s10:else"]}
+      - {at: 4, when: "the toxic material was not on the player", do: ["nothing to give back"], out: end success, reqs: [EN-29], code: ["Check_Player_Range#s14:else"]}
+
+  - id: UC-EN12
+    name: Die and come back stronger
+    level: fish
+    parent: {uc: EPIC-EN, step: 6}
+    actor: SYS-EN
+    supporting: [SYS-LVL]
+    trigger: "the enemy's health reaches 0 from a spell or a burn"
+    pre: "the kill blow is recorded (Kill_Blow_Type)"
+    minimal: "the enemy records what it is"
+    success: "the enemy's next life is stronger against the element that killed it, and its skills show it"
+    why: "each death decides the enemy's next life"
+    steps:
+      - {do: "The enemy rolls whether it survives: the roll is always 1", reqs: [EN-30, IR-EN-1], code: ["Death", "Death#s2:then"]}
+      - {do: "By the kill blow it comes back stronger: more health, fire resistance and speed, no freezing and the war cry, or Black Thumb and poison", reqs: [EN-31, IR-EN-8, IR-EN-19, IR-EN-11], code: ["Death#s3:then", "Death#s6:then", "Death#s15:then", "Death#s24:then"]}
+      - {do: "Its skill icons are placed in the order of its deaths", reqs: [EN-32, IR-EN-10, IR-EN-15], code: ["FireStatChecker", "FireStatChecker#s1:else", "FireStatChecker#s2:then", "FireStatChecker#s5:then", "FireStatChecker#s8:then", "IceStatChecker", "IceStatChecker#s1:else", "IceStatChecker#s2:then", "IceStatChecker#s5:then", "IceStatChecker#s8:then", "NatureStatChecker", "NatureStatChecker#s1:else", "NatureStatChecker#s2:then", "NatureStatChecker#s5:then", "NatureStatChecker#s8:then"]}
+      - {do: "It records its stats for its next life", reqs: [EN-33, IR-EN-4], code: ["ReincarnatedStatsEvent"]}
+    ext:
+      - {at: 1, when: "the roll is not 1 (it cannot be: the roll is between 1 and 1)", do: ["the enemy is destroyed"], out: end minimal, reqs: [EN-30, IR-EN-1], code: ["Death#s2:else"]}
+      - {at: 2, when: "the kill blow is not that value", do: ["that set of gains is skipped"], out: rejoin 2, reqs: [EN-31], code: ["Death#s3:else", "Death#s6:else", "Death#s15:else", "Death#s24:else"]}
+      - {at: 3, when: "the enemy was killed by that element before", do: ["no skill is placed, though the count still grows by 2"], out: rejoin 4, reqs: [EN-32, IR-EN-10], code: ["FireStatChecker#s1:then", "IceStatChecker#s1:then", "NatureStatChecker#s1:then"]}
+      - {at: 3, when: "the count is not at that pair's start", do: ["that pair is left as it is"], out: rejoin 4, reqs: [EN-32], code: ["FireStatChecker#s2:else", "FireStatChecker#s5:else", "FireStatChecker#s8:else", "IceStatChecker#s2:else", "IceStatChecker#s5:else", "IceStatChecker#s8:else", "NatureStatChecker#s2:else", "NatureStatChecker#s5:else", "NatureStatChecker#s8:else"]}
+
+  - id: UC-EN13
+    name: Dissolve in the colour of the kill blow
+    level: fish
+    parent: {uc: EPIC-EN, step: 6}
+    actor: SYS-EN
+    trigger: "the enemy dies of a spell"
+    pre: "the enemy's material 1 has the KilledByColor and Disolve Rate parameters (an asset the paste names)"
+    minimal: "the enemy's material becomes its own copy"
+    success: "the enemy dissolves away in the colour of what killed it, and HasDisolved is set"
+    why: "the player sees which element finished the enemy"
+    steps:
+      - {do: "The enemy's material 1 becomes a dynamic material", reqs: [EN-34], code: ["DisolveTimer"]}
+      - {do: "It is tinted by the kill blow", reqs: [EN-34, IR-EN-19], code: ["DisolveTimer#s4:then", "DisolveTimer#s13:then", "DisolveTimer#s22:then", "DisolveTimer#s31:then"]}
+      - {do: "It dissolves step by step until done", reqs: [EN-34, IR-EN-6, IR-EN-9], code: ["DisolveTimer#s7:then", "DisolveTimer#s7:else", "DisolveTimer#s16:then", "DisolveTimer#s16:else", "DisolveTimer#s25:then", "DisolveTimer#s25:else", "DisolveTimer#s34:then", "DisolveTimer#s34:else"]}
+    ext:
+      - {at: 2, when: "the kill blow is not that value", do: ["that tint is skipped"], out: rejoin 2, reqs: [EN-34], code: ["DisolveTimer#s4:else", "DisolveTimer#s13:else", "DisolveTimer#s22:else", "DisolveTimer#s31:else"]}
+
+  - id: UC-EN14
+    name: Inspect the enemy
+    level: sea
+    parent: {uc: EPIC-EN, step: 7}
+    actor: P1
+    supporting: [SYS-EN, SYS-PC]
+    trigger: "the player inspects an enemy in range (the player's Blueprint calls InspectInfo)"
+    pre: "the player's inspect panel exists (Inspect_UI, the player's Blueprint)"
+    minimal: "the panel shows the enemy's name"
+    success: "the player reads the enemy's name, level, health and the skills it has earned"
+    why: "the player plans the fight from what the enemy has learned"
+    gulf:
+      exec: {text: "inspects the enemy while the prompt shows", reqs: [EN-35]}
+      eval: {text: "reads its name, level, health and the skills it has earned", reqs: [EN-35]}
+    steps:
+      - {do: "The player inspects the enemy: its name, level and maximum health fill the inspect panel", reqs: [EN-35, IR-EN-4], code: ["InspectInfo"]}
+      - {do: "With skills earned, the panel shows each pair the count has reached", reqs: [EN-35, IR-EN-10], code: ["InspectInfo#s4:then", "InspectInfo#s5:then", "InspectInfo#s11:then", "InspectInfo#s17:then"]}
+      - {do: "The player reads the enemy's strengths before fighting on", reqs: [EN-35, IR-EN-18]}
+    ext:
+      - {at: 2, when: "no skill is earned", do: ["skill 3 is hidden"], out: end success, reqs: [EN-35], code: ["InspectInfo#s4:else"]}
+      - {at: 2, when: "the count is past a pair's bound", do: ["that pair is left as it was"], out: rejoin 3, reqs: [EN-35, IR-EN-10], code: ["InspectInfo#s5:else", "InspectInfo#s11:else", "InspectInfo#s17:else"]}
+
+  - id: UC-EN15
+    name: Level up
+    level: fish
+    parent: {uc: EPIC-EN, step: 8}
+    actor: SYS-EN
+    trigger: "the enemy is told to level up (the player's Blueprint calls Level Up)"
+    pre: "the LevelUpMontage exists (an asset the paste names)"
+    minimal: "the enemy's level goes up by one"
+    success: "the enemy is one level up, healed to its new maximum, and idle"
+    why: "an enemy grows as the fight goes on"
+    steps:
+      - {do: "One level more, its montage, and 20 to 45 more maximum health, healed to it", reqs: [EN-36, IR-EN-8], code: ["Level_Up"]}
+      - {do: "'LEVEL UP' shows in white with the new level and a shockwave, and the enemy is left idle", reqs: [EN-36]}

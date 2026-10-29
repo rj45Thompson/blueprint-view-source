@@ -1,0 +1,71 @@
+# The enemy of JJ GameDesign's Antagonist Combat System (one public paste on blueprintue.com, UE 5.3, October 2023: the whole
+# EventGraph of Enemy_AI_BP, 1,009 nodes) as a use case model - checked by .opus-tools/autobot/usecase_model.py. Chosen as the friction
+# showcase: one Tick-driven graph with nested casts, long chains of custom events, and members written from many events. Mode:
+# CODE-IS-SPEC (usecase-map step 0): the only statement of intent is the Blueprint itself and the author's comment boxes around its
+# graphs. Every requirement is READ from a node (`derived`, sourced by the code spaces in generated.yaml) or, where the chain needs
+# what the code does not say, INFERRED - a question for the author, never an answer made up.
+meta:
+  subject: The enemy of a combat system - it sets itself up from a data table or its last life, roams, chases and attacks the player, takes the player's spells, burns, freezes and is thrown by a whip, enrages and poisons, and dies to come back stronger against the element that killed it
+  mode: code-is-spec
+  # a CLOSED LOOP: every requirement carries its effect, held to the code by tools/logic_map.py and to the criteria by
+  # autobot/usecase_kg.py loop. `entry`: the names the graph branches on but never writes, each set outside the model
+  loop:
+    closed: true
+    entry:
+      - {name: BP_LearningKit_PlayerCharacter, why: "the class of the player's character, which the game mode sets: BeginPlay's first cast tests for it, and no graph of the enemy can change it"}
+      - {name: Reincarnated, why: "the enemy's Reincarnated? flag, set by the system's Level Blueprint before it calls Check For Reincarnation (another paste, blueprintue.com/blueprint/1rmt5t6d: one VariableSet of Reincarnated? on Enemy_AI_BP); nothing in this paste writes it"}
+      - {name: TargetLocking, why: "the player character's lock-on flag, set in the player's own Blueprint; the enemy only reads it every frame"}
+      - {name: IsWhipping, why: "the player character's vine whip flag, set in the player's own Blueprint; the enemy only reads it every frame"}
+  story:
+    text: >-
+      An enemy enters the fight, set up from its data table or, when it has died before, from its record one level up. It roams to
+      random points until its sensor sees the player, then chases and attacks with a random combo - a swing, a punch, a spit or a
+      stunning war cry. The player hits it with spells: fire burns it three times, ice freezes it, the vine whip throws it down. Hurt,
+      it can enrage (Black Thumb) or poison the player. At no health it dissolves in the colour of the element that killed it and comes
+      back stronger against that element, its new skills shown when the player inspects it.
+    clauses:
+      - {text: "an enemy is set up from its data table row or from its EnemyInfo record (Check_For_Reincarnation, Set_Stats, Set_Reincarnated_Stats)", source: BP-EN}
+      - {text: "it roams to random points until it sees the player, then chases (Random_Roam, OnSeePawn, Follow_Player)", source: BP-EN}
+      - {text: "it attacks with a random combo of four attacks (Attack_Combo, Swing_down, Punch, Spit, War_Cry)", source: BP-EN}
+      - {text: "the player's spells, burns, freezes and whip hurt and hold it (TakenDamage, Burning, FrozeActor, the Tick's whip branch)", source: BP-EN}
+      - {text: "it can enrage and poison the player (Blackthumb, Toxic_Hit)", source: BP-EN}
+      - {text: "it dies to come back stronger against the element that killed it, its skills shown when inspected (Death, DisolveTimer, InspectInfo)", source: BP-EN}
+  human_loop:
+    - "B1 the player sees an enemy roam, and sees it turn to chase"
+    - "B2 dodges its attacks and hits it with fire, ice, nature and the whip"
+    - "B3 reads the damage numbers, the outline and the health bar"
+    - "B4 sees it dissolve in the killing element's colour, and meets it again, stronger"
+
+actors:
+  - {id: P1, name: Player, kind: person, profile: "fights the enemy with spells and the vine whip, locks on to it and inspects it; judges it by what it does and what its labels and bars show"}
+  - {id: SYS-EN, name: Enemy, kind: system, profile: "Enemy_AI_BP, the one Blueprint in the paste: 36 graphs in one EventGraph"}
+  - {id: SYS-PC, name: Player character, kind: system, profile: "BP_LearningKit_PlayerCharacter, whose members the enemy reads and writes; its Blueprint is the system's Player Blueprint, not in this set"}
+  - {id: SYS-LVL, name: Level, kind: system, profile: "the system's Level Blueprint (another paste): it starts each enemy and keeps the records of the dead"}
+  - {id: SYS-UE, name: Unreal, kind: system, profile: "the engine: BeginPlay, Tick, the pawn sensor, the AI moves, montages, data tables, latent delays"}
+
+sources:
+  - {id: BP-EN, kind: code, path: ../SOURCES.json, cite: "JJ GameDesign's Enemy Blueprint for Antagonist Combat System on blueprintue.com (blueprint/jaj6jttv), UE 5.3, October 2023 - listed with its URL and sha256"}
+  # the author's own words beside the code: the paste's comment boxes (EdGraphNode_Comment), 25 in all, one around each group of graphs
+  - {id: BP-EN-NOTES, kind: quote, text: "Spawn in, start roaming (around BeginPlay); Roam to random point (Random_Roam); Take damage event (TakenDamage); Burn damage every two seconds for six seconds (Burning); Check to see if mesh landed. If not hitting ground even though mesh is on ground, then increase radius (Landed); Freeze, then set unable to be frozen for 3 seconds (FrozeActor); See player? If so then chase player and attack when close enough (OnSeePawn, Follow_Player, Attack_Combo); Death: Set new stats then transfer to reincarnation stats array in level blueprint (Death); Set Skills based off of death order (the three stat checkers); Dynamic dissolve material for death anim (DisolveTimer); Inspection: Set stats to UI variables and then adjust skills visibility based off of what skills the enemy has (InspectInfo)"}
+  # the system's two other pastes, READ by counting node references in their text (2026-10-29); neither is in this set (SOURCES.json says why)
+  - {id: BP-EN-SYSTEM, kind: quote, text: "the Level Blueprint for Antagonist Combat System (blueprintue.com/blueprint/1rmt5t6d) calls Check For Reincarnation 7 times and Ambush Intro once on Enemy_AI_BP, sets its Reincarnated? once, and reads its Dead?, Survive?, HasDisolved? and EnemyInfo; the Player Blueprint (blueprintue.com/blueprint/c1ovvunf) calls Level Up once and TakenDamage twice"}
+  - {id: UE-SRC, kind: framework, cite: "Unreal Engine 5.7.1 source on this machine: KismetMathLibrary.inl:248-251 and UnrealMathUtility.h:274-293 (RandomIntegerInRange includes both ends), KismetSystemLibrary.cpp:2602-2612 and :2639-2656 (a pending Delay ignores a new call, a RetriggerableDelay restarts), DelayAction.h:27-30 (a delay counts down once a frame), KismetTextLibrary.h:240 and :248 (the text conversions' defaults), StandardMacros DoOnce (runs/ue_samples/out_engine/StandardMacros.t3d:715-726, its Start Closed input)"}
+
+# The brainstorm a player would bring: each question inverts into the use case that answers it. The code's own questions (the
+# brainstorm rules of view/trace.js) are the S-Q space in answers.yaml.
+questions:
+  - {id: Q-P1-1, persona: P1, text: "Why does the enemy wander until it sees me?", inverse: UC-EN2}
+  - {id: Q-P1-2, persona: P1, text: "Why did it stop chasing me?", inverse: UC-EN3}
+  - {id: Q-P1-3, persona: P1, text: "Which attack will it use next, and why did it stop attacking?", inverse: UC-EN4}
+  - {id: Q-P1-4, persona: P1, text: "Why do I see its name and health bar only when I am close?", inverse: UC-EN5}
+  - {id: Q-P1-5, persona: P1, text: "How much did my spell hurt it?", inverse: UC-EN6}
+  - {id: Q-P1-6, persona: P1, text: "Why does my fire hurt this one less?", inverse: UC-EN7}
+  - {id: Q-P1-7, persona: P1, text: "Why can I not freeze it any more?", inverse: UC-EN8}
+  - {id: Q-P1-8, persona: P1, text: "What happens when I whip it?", inverse: UC-EN9}
+  - {id: Q-P1-9, persona: P1, text: "Why is it bursting and hitting harder?", inverse: UC-EN10}
+  - {id: Q-P1-10, persona: P1, text: "Why does my character change and lose health near it?", inverse: UC-EN11}
+  - {id: Q-P1-11, persona: P1, text: "Why did the enemy I killed come back stronger?", inverse: UC-EN12}
+  - {id: Q-P1-12, persona: P1, text: "Why did it fade away in that colour?", inverse: UC-EN13}
+  - {id: Q-P1-13, persona: P1, text: "What do its skill icons mean?", inverse: UC-EN14}
+  - {id: Q-P1-14, persona: P1, text: "Why did it level up and stop attacking?", inverse: UC-EN15}
+  - {id: Q-P1-15, persona: P1, text: "Where does an enemy come from when the fight starts?", inverse: UC-EN1}

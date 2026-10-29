@@ -1,0 +1,21 @@
+# The words the enemy's requirements are written in, each bound to the code names it means (the closed loop's L10): a word is defined
+# by the names it binds, and every name must exist in the converted code or the pasted text (tools/logic_map.py resolves them).
+terms:
+  - {term: "enemy", binds: [Enemy_AI_BP], why: "the one Blueprint in the paste; every graph is one of its events"}
+  - {term: "player's character", binds: [Player_Character, BP_LearningKit_PlayerCharacter], why: "the reference BeginPlay keeps (EN-1) and the class it is cast to"}
+  - {term: "spell", binds: [SpellInfo], why: "the player's current spell, whose Damage, DamageColor and Kill_Blow_Type a hit reads (EN-20)"}
+  - {term: "kill blow", binds: [Kill_Blow_Type, KillBlowType_E], why: "what ended the enemy, which decides its next life and its dissolve colour (EN-31, EN-34)"}
+  - {term: "burn", binds: [Burning, AbilityDamageInfo, AbilityDamageCounter, Damage_Over_Time], why: "the fire interface's event, each burn, their count and their damage (EN-23, EN-24)"}
+  - {term: "freeze", binds: [FrozeActor, Unfreeze, Frozen, Can_be_frozen], why: "the ice interface's event, the thaw, the state and whether it can happen (EN-25, EN-26)"}
+  - {term: "vine whip", binds: [IsWhipping, Landed, Reset_Character, WasAttched], why: "the player's flag, the landing check, the reset and the landed state (EN-17 to EN-19)"}
+  - {term: "Black Thumb", binds: [Blackthumb, BlackThumb_Active, BlackthumbDamage, Enraged_Particles], why: "the power, the rage, its damage and its particles (EN-22, EN-27, EN-28)"}
+  - {term: "poison", binds: [Toxic, Toxic_Hit, Toxic_Material_Applied, ToxicChar], why: "the power, the hit, the mark on the player and its material (EN-29)"}
+  - {term: "reincarnation", binds: [Reincarnated, Check_For_Reincarnation, Set_Reincarnated_Stats, EnemyInfo, ReincarnatedStatsEvent], why: "the flag, the setup that reads it, the stats it brings back and the record they come from (EN-2, EN-4, EN-33)"}
+  - {term: "attack", binds: [Attack_Combo, Swing_down, Punch, Spit, War_Cry, Attack_Index], why: "the combo, its four attacks and the roll that picks one (EN-9 to EN-12)"}
+  - {term: "dissolve", binds: [DisolveTimer, Disolve, HasDisolved], why: "the death effect, its amount and its end (EN-34)"}
+  - {term: "skill", binds: [SkillCounter, Skill_1_Texture, FireStatChecker, IceStatChecker, NatureStatChecker], why: "the count of skill slots used, the icons and the checkers that place them (EN-32, EN-35)"}
+  - {term: "inspect", binds: [InspectInfo, Inspect_UI, Can_inspect], why: "the event, the player's panel and the flag that allows it (EN-15, EN-35)"}
+  - {term: "range", binds: [PlayerInRange, Check_Player_Range], why: "the 1300-unit test made every frame and its state (EN-15)"}
+  - {term: "level", binds: [Level, Level_Up, LevelText], why: "the enemy's level, the event that raises it and the text that shows it (EN-36)"}
+  - {term: "roam", binds: [Random_Roam], why: "the event that moves the enemy between random points (EN-6)"}
+  - {term: "seeing the player", binds: [IsSeeingPlayer, Seen_Pawn, Follow_Player], why: "the state the pawn sensor sets, the pawn it saw and the chase (EN-7, EN-8)"}

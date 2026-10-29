@@ -1,0 +1,13 @@
+# Outcomes that cannot happen, each with the reason (tools/logic_map.py: dealt with, not ignored). A path through one is excluded too.
+# All eight are the DoOnce macro's test on its Start Closed input, which the converter writes as the literal it holds: in the paste
+# every DoOnce leaves that input unwired and with no DefaultValue, so it is false, and the then side never runs (the engine's
+# DoOnce: runs/ue_samples/out_engine/StandardMacros.t3d:715-726). Each else side is cited by a step.
+exclusions:
+  - {ref: "Burning#s3:then", why: "the test is the literal false: K2Node_MacroInstance_8's Start Closed is left unwired with no default (false)"}
+  - {ref: "FrozeActor#s5:then", why: "the test is the literal false: K2Node_MacroInstance_1's Start Closed is left unwired with no default (false)"}
+  - {ref: "Toxic_Hit#s4:then", why: "the test is the literal false: K2Node_MacroInstance_7's Start Closed is left unwired with no default (false)"}
+  - {ref: "Follow_Player#s10:then", why: "the test is the literal false: K2Node_MacroInstance_6's Start Closed is left unwired with no default (false)"}
+  - {ref: "Swing_down#s3:then", why: "the test is the literal false: K2Node_MacroInstance_2's Start Closed is left unwired with no default (false)"}
+  - {ref: "Punch#s3:then", why: "the test is the literal false: K2Node_MacroInstance_3's Start Closed is left unwired with no default (false)"}
+  - {ref: "Spit#s4:then", why: "the test is the literal false: K2Node_MacroInstance_5's Start Closed is left unwired with no default (false)"}
+  - {ref: "War_Cry#s4:then", why: "the test is the literal false: K2Node_MacroInstance_4's Start Closed is left unwired with no default (false)"}

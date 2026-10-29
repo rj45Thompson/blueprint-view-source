@@ -171,11 +171,13 @@
 <div id="ue2d" class="glass" hidden><div class="u2head"><b id="u2title"></b><small id="u2note"></small><a id="u2link" target="_blank" rel="noopener">its page on blueprintue.com</a>
   <button class="btn" id="u2fit">1:1</button><button class="btn" id="u2close">Close</button></div><div id="u2body" data-fit="1"></div></div>
 <script>
-  // the paste set this city draws: ?set=pong (the hello world, first), ?set=asteroids or ?set=lockon - each set's data written by
-  // view/scene_cli.js, smallest first and the two that play before the one that does not. A name not listed loads nothing, and the
-  // city says its data did not load. A set with a game (its third field) loads the engine under it, view/games/<game>.js, which the
-  // page runs on the set's converted graphs (view/run.js reading them with view/pl.js)
-  window.CITY_SETS = [['pong', 'Pong, the hello world', 'pong'], ['asteroids', 'Asteroid Shooter', 'asteroids'], ['lockon', 'Lock-On System', null]];
+  // the paste set this city draws: ?set=pong (the hello world, first), ?set=asteroids, ?set=lockon or ?set=enemyai (the friction
+  // showcase: one 1,009-node enemy) - each set's data written by view/scene_cli.js, smallest first and the two that play before
+  // the ones that do not. A name not listed loads nothing, and the city says its data did not load. A set with a game (its third
+  // field) loads the engine under it, view/games/<game>.js, which the page runs on the set's converted graphs (view/run.js reading
+  // them with view/pl.js)
+  window.CITY_SETS = [['pong', 'Pong, the hello world', 'pong'], ['asteroids', 'Asteroid Shooter', 'asteroids'], ['lockon', 'Lock-On System', null],
+                      ['enemyai', 'Antagonist Enemy AI', null]];
   (function () {
     var s = new URLSearchParams(location.search).get('set') || window.CITY_SETS[0][0];
     window.CITY_SET = s;

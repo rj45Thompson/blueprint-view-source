@@ -15,8 +15,9 @@ output parses as C# for every template Blueprint of Unreal Engine 5.7 (275 of 27
   Unity assembly from the command line Unity wrote for it, and refuses one older than the project it describes.
 - `blueprint/view` - the page (`index.html`), the 3D city (`view3d.html`), the graph language and its printers (`pl.js`), the
   Blueprint converter (`bp.js`), the trace (`trace.js`), the classes (`oo.js`), and their command lines (`*_cli.js`).
-- `blueprint/samples/online` - three Blueprint sets people pasted on blueprintue.com (a lock-on system, a two-paddle game, an asteroid
-  shooter): each paste's manifest and each set's use case model. The paste text is its author's, so it is fetched, never committed.
+- `blueprint/samples/online` - four Blueprint sets people pasted on blueprintue.com (a lock-on system, a two-paddle game, an asteroid
+  shooter, and a 1,009-node enemy AI chosen for its friction): each paste's manifest and each set's use case model. The paste text is
+  its author's, so it is fetched, never committed.
 - `blueprint/unity` - a Unity package: Window > u2ue > Blueprint View draws your project's assemblies (`blueprint/unity/README.md`).
 - `autobot` - the use case checkers a set's build runs: the model's rules and its closed loop.
 

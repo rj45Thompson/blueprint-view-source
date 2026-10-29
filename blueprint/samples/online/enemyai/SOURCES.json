@@ -1,0 +1,18 @@
+{
+ "set": "enemyai",
+ "profile": "https://blueprintue.com/profile/jj-gamedesign/",
+ "about": "The enemy of JJ GameDesign's Antagonist Combat System (UE 5.3), a public paste on blueprintue.com posted 2023-10-19: the whole EventGraph of Enemy_AI_BP (its ExportPath: /Game/SystemMenagerie/Characters/EnemyAI/Enemy_AI_BP.Enemy_AI_BP:EventGraph), 1,009 nodes in one graph - BeginPlay, Tick, a pawn sensor, roaming and following the player, three attacks picked at random, damage over time from the player's spells, freezing, dying, coming back stronger, and the stat cards the player inspects. Chosen as the friction showcase: one graph, Tick-driven, nested casts, long exec chains, and members written from many events. The system's two other pastes are left out, each for its measured reason: the Level Blueprint (1rmt5t6d, 306 nodes) converts, but its Death_Check graph has more than 20,000 entry-to-exit paths, which the trace refuses rather than cuts short; the Player Blueprint (c1ovvunf, 788 nodes) converts, but the trace finds 56 decisions where the text holds 58 deciding nodes, and its outside count fails. Authors keep the rights to their pastes (blueprintue.com/terms-of-service): the .t3d text stays out of git; this manifest is the record. nodes/chars/title/author/ue are a browser's own read of the page (headless Chromium, 2026-10-29 11:52Z), held against what tools/online_sample.py reads.",
+ "pastes": [
+  {
+   "name": "Enemy_AI_BP",
+   "url": "https://blueprintue.com/blueprint/jaj6jttv/",
+   "title": "Enemy Blueprint for Antagonist Combat System",
+   "author": "JJ GameDesign",
+   "ue": "5.3",
+   "nodes": 1009,
+   "chars": 3078137,
+   "sha256": "64327a20296480bc52a6ae496521498cfc68cbd50c91af8a0f94a75d65f53ced",
+   "read": "2026-10-29 11:53Z"
+  }
+ ]
+}

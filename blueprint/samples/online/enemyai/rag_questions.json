@@ -1,0 +1,12 @@
+[
+ {"id": "R1", "q": "Why does a killed enemy always come back?", "keys": ["RandomIntegerInRange(1, 1)", "always reincarnates"]},
+ {"id": "R2", "q": "Where does the damage of a spell hit come from?", "keys": ["SpellInfo.Damage", "Damage Amount"]},
+ {"id": "R3", "q": "What does the enemy do every frame?", "keys": ["Check_Player_Range", "TargetLocking", "custom-depth outline"]},
+ {"id": "R4", "q": "How does the enemy choose its next attack?", "keys": ["Attack_Index", "Max_Number_of_attacks", "both included"]},
+ {"id": "R5", "q": "How long does a freeze last, and when can the enemy be frozen again?", "keys": ["Delay(4f)", "Delay(3f)", "can be frozen again 3 s later"]},
+ {"id": "R6", "q": "Which graphs write Can_Attack?", "keys": ["Q-WRITE.Can_Attack", "Follow_Player", "Level_Up"]},
+ {"id": "R7", "q": "When does a burn stop?", "keys": ["AbilityDamageCounter", "back at 0"]},
+ {"id": "R8", "q": "Why can the enemy not be frozen after an ice death?", "keys": ["Can_be_frozen", "no longer Can_be_frozen"]},
+ {"id": "R9", "q": "What does the vine whip do to the enemy?", "keys": ["IsWhipping", "SetSimulatePhysics", "fall under physics"]},
+ {"id": "R10", "q": "Who starts an enemy roaming?", "keys": ["Random_Roam", "Check_For_Reincarnation", "starts and ends outside this graph"]}
+]
