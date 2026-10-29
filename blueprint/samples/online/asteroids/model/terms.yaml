@@ -1,0 +1,19 @@
+# The words the asteroid shooter's requirements are written in, each bound to the code names it means (the closed loop's L10): a word
+# is defined by the names it binds, and every name must exist in the converted code or the pasted text (tools/logic_map.py resolves
+# them).
+terms:
+  - {term: "ship", binds: [BP_Character], why: "the player's Blueprint: Shoot and ReduceLives are its graphs, and the overlaps test for its class"}
+  - {term: "controller", binds: [BP_Controller], why: "the player's controller: the turning, the score widget and AddScore"}
+  - {term: "asteroid", binds: [BP_Asteorid, BP_Meteor], why: "one Blueprint under two names, by the GUID evidence (IR-AS-1)"}
+  - {term: "enemy ship", binds: [BP_EnemyShip], why: "the Blueprint that flies a spline and may fire once"}
+  - {term: "bullet", binds: [BP_EnemyProjectile], why: "what an enemy ship fires (AS-13)"}
+  - {term: "shot", binds: [BP_Projectile], why: "what the player fires (AS-2), and the class the asteroid and the ship test for"}
+  - {term: "spawner", binds: [BP_EnemyLogic, CustomEvent_0, CustomEvent_1], why: "the Blueprint whose two events spawn asteroids and ships"}
+  - {term: "title screen", binds: [TitleScreen, b_IsTitleScreen], why: "the level, and the flag the ship keeps while it is up"}
+  - {term: "life", binds: [Lives, ReduceLives], why: "the count a hit takes one from (AS-18), and the graph that does it"}
+  - {term: "invincibility", binds: [DoOnce_0_Closed], why: "the DoOnce's state: shut from a hit until the ship has flashed back in (AS-18, AS-21)"}
+  - {term: "score", binds: [Score, AddScore, ScoreWidget], why: "the total, the event that adds to it, and the widget that shows it"}
+  - {term: "aim", binds: [AimVector, Aim_Vector], why: "the direction an asteroid and a bullet move in (AS-8, AS-15)"}
+  - {term: "path", binds: [Spline, Distance], why: "what an enemy ship follows and how far along it is (AS-12)"}
+  - {term: "explosion", binds: [BP_Explosion], why: "what a hit ship and a hit player leave (AS-14, AS-20)"}
+  - {term: "flash", binds: [FlashInterval], why: "the time between the blinks of a ship flashing back in (AS-21)"}

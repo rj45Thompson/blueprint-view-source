@@ -1,0 +1,187 @@
+{
+ "set": "asteroids",
+ "profile": "https://blueprintue.com/profile/siljaz/",
+ "about": "An asteroid shooter in UE 5.0 by siljaZ, posted to blueprintue.com in January 2023 as 23 pastes, a graph at a time (blueprintue.com/profile/siljaz/): the player circles the middle of the screen, steering with one axis and firing with one action, while asteroids and enemy ships fly out of the middle at them. This set is 16 of the 23, each graph at its last pasted version. Left out, each for its reason: AsteroidSpawning2 (its copy wires to K2Node_MacroInstance_6, which it does not hold, and the converter refuses it), the four earlier versions of graphs pasted again later (InitialMovement, InitialShooting, AsteroidInitialCollision, EnemyCollision), and the waves (EnemyWaveSpawning, EnemySpawningMacro: a macro of the author's own, which the converter does not inline). BP_Asteorid is BP_Meteor renamed: its overlap event is still named BndEvt__BP_Meteor_Sphere_..., so its BeginPlay is the one pasted under the old name. Authors keep the rights to their pastes (blueprintue.com/terms-of-service): the .t3d texts stay out of git; this manifest is the record. nodes/chars/title/author/ue are a browser's own read of each page (headless Chromium, 2026-10-28 23:5xZ), held against what tools/online_sample.py reads.",
+ "pastes": [
+  {
+   "name": "BP_Controller_Move",
+   "url": "https://blueprintue.com/blueprint/0h7mvuhu/",
+   "title": "Movement with adjusted speed",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 8,
+   "chars": 24979,
+   "sha256": "f7850e73bc2aa56a9de2c5c0cf4b5ebeda272d7b4b459641c7600ba615ca58ad",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_Character_Shoot",
+   "url": "https://blueprintue.com/blueprint/0ecvuhc9/",
+   "title": "Shooting or starting the game",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 8,
+   "chars": 28884,
+   "sha256": "d0b7feaa3557428e0e844d33e09af95f569e711ff21f9b64ecae3028f81dfd3a",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_Character_Lives",
+   "url": "https://blueprintue.com/blueprint/g-cm-_2p/",
+   "title": "Dying and Lives",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 45,
+   "chars": 134513,
+   "sha256": "63c6db1ff496e668ccb2626611720d8545f8fb65a55cd4ef8584dc1e64df0612",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_Controller_Score",
+   "url": "https://blueprintue.com/blueprint/fbjqqr_2/",
+   "title": "Score UI",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 14,
+   "chars": 40140,
+   "sha256": "f74843f2cf1944fb3622b1ce6b5d7371a9ef889db36a8feff5c4e1d048650435",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "TitleScreen",
+   "url": "https://blueprintue.com/blueprint/4cj9jsej/",
+   "title": "TitleScreen",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 11,
+   "chars": 35690,
+   "sha256": "3d2b97e0fc32f5df11b0c469f69bae436a75f1daeb8e34a68104dbb030622ead",
+   "read": "2026-10-28 23:59Z",
+   "owner": "TitleScreen",
+   "owner_why": "its own events name no Blueprint. Its author titled it TitleScreen, and it is a level's start: it tells the player character it is on the title screen (b_IsTitleScreen), moves the view to CameraActor_1 and removes the UI - the level BP_Character opens at game over (OpenLevelBySoftObjectPtr /Game/Levels/TitleScreen.TitleScreen, Dying and Lives), so its owner is that level's Blueprint, named here by the level"
+  },
+  {
+   "name": "BP_Projectile",
+   "url": "https://blueprintue.com/blueprint/mdc7y1wg/",
+   "title": "InitialProjectiles",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 8,
+   "chars": 24265,
+   "sha256": "24ea63176d8a40ffa5b22c040fc90a03ced3561166dfea3d486e8f6b009e5780",
+   "read": "2026-10-28 23:59Z",
+   "owner": "BP_Projectile",
+   "owner_why": "its own events name no Blueprint. Its author titled it InitialProjectiles, and it is a shot: from where it was spawned it carries its RenderComponent to the middle along a Timeline and then destroys itself. The set has two shot classes - BP_EnemyProjectile, whose own pastes name it (EnemyBullet, EnemyBulletHit), and BP_Projectile, which BP_Character spawns when it fires (Shooting or starting the game) and BP_Asteorid and BP_EnemyShip test for (AsteroidCollision, EnemyShipCollision) - so this is BP_Projectile"
+  },
+  {
+   "name": "BP_EnemyLogic_Asteroids",
+   "url": "https://blueprintue.com/blueprint/ridw2_xv/",
+   "title": "AsteroidSpawning",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 9,
+   "chars": 31257,
+   "sha256": "28bafe45d53f21ee3197c05c7ba1ffd74e5128e8772541ba71f1aa70398b88d0",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_Meteor_Movement",
+   "url": "https://blueprintue.com/blueprint/d9699_i5/",
+   "title": "AsteroidMovement",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 21,
+   "chars": 59159,
+   "sha256": "a0d89a8b77971539cf0ba3bded89593414b14858273f81b3399a94219eceec05",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_Asteorid_Movement",
+   "url": "https://blueprintue.com/blueprint/g27t04bl/",
+   "title": "AsteroidMovementAndSizeAdjusment",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 16,
+   "chars": 42256,
+   "sha256": "3d4cbdaf5d275f11b9823dee7b60517fcae60acf1b2a91a1b448489def502d5b",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_Asteorid_Collision",
+   "url": "https://blueprintue.com/blueprint/s9gjsrrc/",
+   "title": "AsteroidCollision",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 13,
+   "chars": 37798,
+   "sha256": "33304392cdfa3fd42ba4acffe253a6d872bfef118e71203c78f4829ce8218862",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_EnemyLogic_Ships",
+   "url": "https://blueprintue.com/blueprint/30jis3ti/",
+   "title": "EnemyShipsSpawning",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 5,
+   "chars": 20204,
+   "sha256": "9c7c4c211c4f7335164196f9f3ae5a9d47d34165aeb390c1730c5ad3d6548ab8",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_EnemyShip_Movement",
+   "url": "https://blueprintue.com/blueprint/vj6whcke/",
+   "title": "EnemyMovementAndScaling",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 23,
+   "chars": 66470,
+   "sha256": "c0f6dabf704a92e94d664595383c2950aa450bbaf5de4841734f359d623bb6d2",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_EnemyShip_Collision",
+   "url": "https://blueprintue.com/blueprint/-qljoxhw/",
+   "title": "EnemyShipCollision",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 14,
+   "chars": 41955,
+   "sha256": "6fd3b11f33a15a60f4b614b90f74aada3928f9e228ef222a2da5772b444f14f5",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_EnemyShip_Shooting",
+   "url": "https://blueprintue.com/blueprint/th4cpbfh/",
+   "title": "EnemyShipsShooting",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 10,
+   "chars": 29346,
+   "sha256": "f3b98da12b0a7c8ff8fd891b95bc16c6c80c8abbc045cfeef21afb5644371af3",
+   "read": "2026-10-28 23:59Z"
+  },
+  {
+   "name": "BP_EnemyProjectile",
+   "url": "https://blueprintue.com/blueprint/1ho51-eu/",
+   "title": "EnemyBullet",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 19,
+   "chars": 53177,
+   "sha256": "903abee7d74276b360d20f9713ec60ae336b49e30dad61cd1b495107c0f3d2ff",
+   "read": "2026-10-29 00:00Z"
+  },
+  {
+   "name": "BP_EnemyProjectile_Hit",
+   "url": "https://blueprintue.com/blueprint/adt_5eok/",
+   "title": "EnemyBulletHit",
+   "author": "siljaZ",
+   "ue": "5.0",
+   "nodes": 8,
+   "chars": 24324,
+   "sha256": "9b924437b117f6176069f8075efa5676f2d4c94ea14565fb2e981a8d8ed2855a",
+   "read": "2026-10-29 00:00Z"
+  }
+ ]
+}

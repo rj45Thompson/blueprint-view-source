@@ -1,0 +1,7 @@
+[
+ {"id": "H1", "q": "What does Frank do when an enemy walks into the lock range while he is already locked on?", "keys": ["OnComponentBeginOverlap(LockOnSphere)", "LO-3"]},
+ {"id": "H2", "q": "Can the same enemy be listed twice?", "keys": ["Array_Add", "IR-LO-3"]},
+ {"id": "H3", "q": "What does each enemy draw on screen?", "keys": ["EDrawDebugTrace", "IR-LO-8"]},
+ {"id": "H4", "q": "Which interface does Frank message, and with what?", "keys": ["LockOnInterface(LockedOnTarget)"]},
+ {"id": "H5", "q": "What happens if no enemy is in range when I press lock-on?", "keys": ["RotationInstance", "LO-19"]}
+]

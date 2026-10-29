@@ -1,0 +1,16 @@
+# The words the Lock-On requirements are written in, each bound to the code names it means (the closed loop's L10): a
+# requirement an AI acts on must mean one thing, so a word is defined by the names it binds and every name must exist in the
+# converted code or the pasted text (tools/logic_map.py resolves them). READ from the graphs: each binding is the name the
+# requirement's own `measure` points at.
+terms:
+  - {term: "lock range", binds: [LockOnSphere, Out_Actors], why: "the sphere whose overlaps fill Out_Actors (LO-1, LO-4)"}
+  - {term: "lock cone", binds: [LockOnCone, ConeActors], why: "the cone whose overlaps fill ConeActors (LO-5)"}
+  - {term: "in front", binds: [ConeActors], why: "an enemy is in front while it is in ConeActors (LO-5, LO-12)"}
+  - {term: "candidate", binds: [Out_Actors, ConeActors], why: "the search walks one of the two lists (LO-12)"}
+  - {term: "enemy", binds: [Master_Enemy], why: "an actor counts only after the cast to Master_Enemy (LO-1, LO-5)"}
+  - {term: "Frank", binds: [FrankBP], why: "the character class these graphs belong to (the pastes' owner, read by oo.js)"}
+  - {term: "target", binds: [LockedOnTarget], why: "the variable every lock, cycle and release writes"}
+  - {term: "lock", binds: [LockedOn], why: "the flag LockON branches on (LO-10)"}
+  - {term: "facing update", binds: [ToggleLockOn, NewControlRotation], why: "the timer-run event and the function it calls (LO-18, LO-20)"}
+  - {term: "search", binds: [LockON, LockOnDone], why: "the loops over the candidates and the step that keeps the closest (LO-11, LO-13)"}
+  - {term: "cycling", binds: [ConeCycle], why: "the event that moves the target along ConeActors (LO-30, LO-31)"}

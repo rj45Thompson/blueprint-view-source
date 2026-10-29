@@ -1,0 +1,52 @@
+# Pong (two anonymous pastes on blueprintue.com, UE 4.18) as a use case model - checked by .opus-tools/autobot/usecase_model.py.
+# The hello world before Lock-On: a small, complete game, so the method is met on something simple before that complex example.
+# Mode: CODE-IS-SPEC (usecase-map step 0): the only statement of intent is the Blueprints themselves. Every
+# requirement is READ from a node (`derived`, sourced by the code spaces in generated.yaml) or, where the chain needs something the
+# code does not say, INFERRED - a question for the author, never an answer made up for them.
+meta:
+  subject: A Pong ball and paddle - the ball is served, crosses the table, turns off paddles and walls, and is served again from a goal; a player moves a paddle with one axis
+  mode: code-is-spec
+  # a CLOSED LOOP: every requirement carries its effect, held to the code by tools/logic_map.py and to the criteria by
+  # autobot/usecase_kg.py loop. `entry`: the names the pasted graphs branch on but never write, each set outside the model
+  loop:
+    closed: true
+    entry:
+      - {name: BP_Paddle, why: "the class of the actor an overlap reports: the engine's, from the paddle's own Blueprint class"}
+      - {name: BP_Wall, why: "the class of the actor an overlap reports: a Blueprint the pastes do not hold"}
+      - {name: BP_Goal, why: "the class of the actor an overlap reports: a Blueprint the pastes do not hold"}
+  story:
+    text: >-
+      Two players keep a ball in play. The ball is served from the middle, crosses the table, turns back off a paddle and off the
+      walls, and a ball that gets past a paddle reaches a goal and is served again. The pastes hold the ball and one paddle; the walls,
+      the goals, the level and the input mapping are not in them.
+    clauses:
+      - {text: "the ball is served when play begins (ReceiveBeginPlay sets Velocity from a random direction)", source: BP-PG}
+      - {text: "the ball moves every frame (its Tick adds Velocity x Speed x DeltaSeconds, swept)", source: BP-PG}
+      - {text: "a paddle or a wall turns it (the Sphere's overlap flips X for a BP_Paddle, Y for a BP_Wall)", source: BP-PG}
+      - {text: "a goal serves it again from the middle (the overlap with a BP_Goal resets its place and its direction)", source: BP-PG}
+      - {text: "a player moves the paddle with one axis (InputAxis MovePaddle sets the paddle's Velocity)", source: BP-PG}
+  human_loop:
+    - "B1 the player watches the ball come toward their paddle"
+    - "B2 pushes the axis to move the paddle into its path"
+    - "B3 sees the ball turn back, or slip past into the goal"
+    - "B4 sees the ball served again from the middle"
+
+actors:
+  - {id: P1, name: Player, kind: person, profile: "pushes the MovePaddle axis; judges it by whether the ball comes back"}
+  - {id: SYS-BALL, name: Ball, kind: system, profile: "BP_Ball: BeginPlay, Tick and its Sphere's overlap (owner READ from its pins)"}
+  - {id: SYS-PADDLE, name: Paddle, kind: system, profile: "BP_Paddle: Tick and InputAxis MovePaddle (owner READ from its self pins)"}
+  - {id: SYS-UE, name: Unreal, kind: system, profile: "the engine: BeginPlay, Tick, overlap events, input axes, swept moves"}
+
+sources:
+  - {id: BP-PG, kind: code, path: ../SOURCES.json, cite: "Pong - BP_Ball (blueprintue.com/blueprint/oscal-o3) and Pong - BP_Paddle (fvpp3w_), UE 4.18, anonymous, both 2017-11-15"}
+  - {id: BRIEF-PG, kind: standing, cite: "the set's brief: a hello world - a small, complete game converted first, so the method is met on something simple before the complex Lock-On example"}
+  - {id: UE-SRC, kind: framework, cite: "Unreal Engine 5.7.1 source on this machine: Actor.h:1747 (what a swept move does), K2Node_InputAxisEvent.cpp:88 (an axis event's title)"}
+
+# The brainstorm a player would bring: each question inverts into the use case that answers it. The code's own questions (the
+# brainstorm rules of view/trace.js) are the S-Q space in answers.yaml.
+questions:
+  - {id: Q-P1-1, persona: P1, text: "Which way will the ball go when the game starts?", inverse: UC-PG1}
+  - {id: Q-P1-2, persona: P1, text: "Why is the ball so fast, or so slow?", inverse: UC-PG2}
+  - {id: Q-P1-3, persona: P1, text: "How do I move my paddle?", inverse: UC-PG3}
+  - {id: Q-P1-4, persona: P1, text: "Why did the ball go through my paddle?", inverse: UC-PG4}
+  - {id: Q-P1-5, persona: P1, text: "Why didn't I get a point when the ball went past them?", inverse: UC-PG5}

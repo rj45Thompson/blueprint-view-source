@@ -1,0 +1,11 @@
+# usecase_kg.py loop --accept: each requirement's fingerprint when it was last verified, and why. Never edit.
+PG-1 1acd983881d592f0 first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+PG-2 0d4e2786abefa881 first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+PG-3 bd8ec107b3a71417 first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+PG-4 42819fc22e5bc6f6 first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+PG-7 98c5e9ab5a25019e first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+PG-5 f449dd3e43db7027 first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+PG-6 b8c85bc8ce2ea67c first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+IR-PG-1 39666bfe3baea77e first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+IR-PG-2 1f6bbe89cc80bf8c first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand
+IR-PG-3 c78d06e36707d520 first verified 10-28: the Pong hello world, 13 assertions of 7 READ requirements hold and 13 plants flip; 3 owner questions stand

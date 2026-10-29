@@ -1,0 +1,158 @@
+# What the Lock-On System does, READ from its nodes (derived: the code spaces in generated.yaml map each one), and what the chain
+# needs that the code does not say (inferred: each `why` is the question, for the Blueprint's author). `measure` says where it shows.
+requirements:
+  # tracking enemies (UC-LO2, UC-LO3, UC-LO8)
+  - {id: LO-1, kind: derived, text: "An actor entering or leaving the lock range counts only when it is a Master_Enemy", measure: "the cast at OnComponentBeginOverlap(LockOnSphere)#s1 and OnComponentEndOverlap(LockOnSphere)#s1; a failed cast does nothing",
+     effect: [{branches: "Master_Enemy", at: "OnComponentBeginOverlap(LockOnSphere)#s1"},
+              {sets: "Out_Actors", by: "Array_Add", at: "OnComponentBeginOverlap(LockOnSphere)#s1:then"},
+              {branches: "Master_Enemy", at: "OnComponentEndOverlap(LockOnSphere)#s1"}]}
+  - {id: LO-2, kind: derived, text: "Each enemy in range measures its distance to Frank every 0.01 s, from when it enters until it leaves", measure: "K2_SetTimer(enemy, DistanceToFrank, 0.01, looping) at OnComponentBeginOverlap(LockOnSphere)#s3; K2_PauseTimer at OnComponentEndOverlap(LockOnSphere)#s3",
+     effect: [{calls: "K2_SetTimer", args: ["DistanceToFrank", "0.01", "true"], at: "OnComponentBeginOverlap(LockOnSphere)#s3"},
+              {calls: "K2_PauseTimer", args: ["DistanceToFrank"], at: "OnComponentEndOverlap(LockOnSphere)#s3"}]}
+  - {id: LO-3, kind: derived, text: "While a lock is on, an enemy entering the range, or the target leaving it, makes the lock choose again", measure: "LockedOn = false and LockON() at OnComponentBeginOverlap(LockOnSphere)#s4:then and OnComponentEndOverlap(LockOnSphere)#s5:then",
+     effect: [{branches: "LockedOn", at: "OnComponentBeginOverlap(LockOnSphere)#s4"},
+              {sets: "LockedOn", to: false, at: "OnComponentBeginOverlap(LockOnSphere)#s4:then"},
+              {calls: "LockON", at: "OnComponentBeginOverlap(LockOnSphere)#s4:then"},
+              {branches: "LockedOnTarget", at: "OnComponentEndOverlap(LockOnSphere)#s5"},
+              {sets: "LockedOn", to: false, at: "OnComponentEndOverlap(LockOnSphere)#s5:then"},
+              {calls: "LockON", at: "OnComponentEndOverlap(LockOnSphere)#s5:then"}]}
+  - {id: LO-4, kind: derived, text: "An enemy leaving the range is no longer a candidate", measure: "Array_RemoveItem(Out_Actors) at OnComponentEndOverlap(LockOnSphere)#s2",
+     effect: [{sets: "Out_Actors", by: "Array_RemoveItem", at: "OnComponentEndOverlap(LockOnSphere)#s2"}]}
+  - {id: LO-5, kind: derived, text: "An actor entering or leaving the lock cone counts as in front only when it is a Master_Enemy", measure: "the casts at OnComponentBeginOverlap(LockOnCone)#s1 and OnComponentEndOverlap(LockOnCone)#s1; Array_Add / Array_RemoveItem on ConeActors",
+     effect: [{branches: "Master_Enemy", at: "OnComponentBeginOverlap(LockOnCone)#s1"},
+              {sets: "ConeActors", by: "Array_Add", at: "OnComponentBeginOverlap(LockOnCone)#s1:then"},
+              {branches: "Master_Enemy", at: "OnComponentEndOverlap(LockOnCone)#s1"},
+              {sets: "ConeActors", by: "Array_RemoveItem", at: "OnComponentEndOverlap(LockOnCone)#s1:then"}]}
+  - {id: LO-6, kind: derived, text: "An enemy that has measured its distance can be targeted", measure: "CanBeTargeted = true at DistanceToFrank#s4",
+     effect: [{sets: "CanBeTargeted", to: true, at: "DistanceToFrank#s4"}]}
+  - {id: LO-7, kind: derived, text: "An enemy's distance to Frank is the distance to the first thing its line trace toward the player character hits", measure: "LineTraceSingleForObjects to GetPlayerCharacter(0) at DistanceToFrank#s1; BreakHitResult's Distance at #s3",
+     effect: [{calls: "LineTraceSingleForObjects", args: ["GetPlayerCharacter(0)"], at: "DistanceToFrank#s1"},
+              {calls: "BreakHitResult", args: ["LineTraceSingleForObjects_OutHit_1"], at: "DistanceToFrank#s3"},
+              {sets: "DistanceToFrankVar", to: "BreakHitResult_Distance_3", at: "DistanceToFrank#s2"}]}
+  # locking on (UC-LO1)
+  - {id: LO-9, kind: derived, text: "The target is told when it becomes the target and when it stops being it", measure: "LockOnInterface(target) at SetLockOnTarget#s8 and #s16, LockON#s8, ConeCycle#s5-#s10",
+     effect: [{calls: "LockOnInterface", at: "SetLockOnTarget#s8"},
+              {calls: "LockOnInterface", at: "SetLockOnTarget#s16"},
+              {calls: "LockOnInterface", at: "LockON#s8"},
+              {calls: "LockOnInterface", at: "ConeCycle#s4:then"},
+              {calls: "LockOnInterface", at: "ConeCycle#s4:else"}]}
+  - {id: LO-10, kind: derived, text: "One lock-on input toggles: it locks when no lock is on and releases when one is", measure: "LockON#s1 branches on LockedOn",
+     effect: [{branches: "LockedOn", at: "LockON#s1"},
+              {calls: "UnCrouch", at: "LockON#s1:then"},
+              {calls: "SetLockOnTarget", at: "LockON#s1:else"}]}
+  - {id: LO-11, kind: derived, text: "A search for a target considers only enemies closer than 4000 units", measure: "ClosestTargetDistance = 4000 at LockON#s9 before the < tests",
+     effect: [{sets: "ClosestTargetDistance", to: 4000, at: "LockON#s9"},
+              {branches: "ClosestTargetDistance", at: "LockON#s18"},
+              {branches: "ClosestTargetDistance", at: "LockON#s28"}]}
+  - {id: LO-12, kind: derived, text: "Enemies in front are the candidates when there are any; otherwise every enemy in range is", measure: "Array_IsEmpty(ConeActors) at LockON#s14 chooses the loop over Out_Actors or over ConeActors",
+     effect: [{branches: "ConeActors", at: "LockON#s14"},
+              {branches: "Out_Actors", at: "LockON#s15"},
+              {branches: "ConeActors", at: "LockON#s25"}]}
+  - {id: LO-13, kind: derived, text: "The closest candidate becomes the target; on a tie the first one found stays", measure: "LockON#s18: < calls LockOnDone (target and closest distance), == and > do nothing (#s20)",
+     effect: [{branches: "Distance_to_Frank_Var", at: "LockON#s18"},
+              {calls: "LockOnDone", at: "LockON#s18:then"},
+              {branches: "Distance_to_Frank_Var", at: "LockON#s28"},
+              {calls: "LockOnDone", at: "LockON#s28:then"},
+              {sets: "LockedOnTarget", to: "EnemyElement", at: "LockOnDone#s1"},
+              {sets: "ClosestTargetDistance", to: "LockedOnTarget.Distance_to_Frank_Var", at: "LockOnDone#s2"}]}
+  - {id: LO-14, kind: derived, text: "After the search the lock is set only if the target is not dead", measure: "not LockedOnTarget.IsDead at LockON#s22 / #s32 before SetLockOnTarget",
+     effect: [{branches: "IsDead", at: "LockON#s22"},
+              {calls: "SetLockOnTarget", at: "LockON#s22:then"},
+              {branches: "IsDead", at: "LockON#s32"},
+              {calls: "SetLockOnTarget", at: "LockON#s32:then"}]}
+  - {id: LO-15, kind: derived, text: "The lock is set only when the closest distance is at most MaxDistance", measure: "SetLockOnTarget#s1 (<) and #s9 else (==) both lock; > does nothing",
+     effect: [{branches: "MaxDistance", at: "SetLockOnTarget#s1"},
+              {sets: "LockedOn", to: true, at: "SetLockOnTarget#s1:then"},
+              {branches: "MaxDistance", at: "SetLockOnTarget#s9"},
+              {sets: "LockedOn", to: true, at: "SetLockOnTarget#s9:else"}]}
+  - {id: LO-16, kind: derived, text: "While locked Frank crouches; releasing the lock makes him stand", measure: "Crouch at SetLockOnTarget#s3 / #s11; UnCrouch at LockON#s3",
+     effect: [{calls: "Crouch", at: "SetLockOnTarget#s1:then"},
+              {calls: "Crouch", at: "SetLockOnTarget#s9:else"},
+              {calls: "UnCrouch", at: "LockON#s1:then"}]}
+  - {id: LO-17, kind: derived, text: "While locked Frank turns with the controller, not with his movement; releasing reverses it", measure: "bUseControllerDesiredRotation / bOrientRotationToMovement at SetLockOnTarget#s4-#s5 and LockON#s4-#s5",
+     effect: [{sets: "bUseControllerDesiredRotation", to: true, at: "SetLockOnTarget#s1:then"},
+              {sets: "bOrientRotationToMovement", to: false, at: "SetLockOnTarget#s1:then"},
+              {sets: "bUseControllerDesiredRotation", to: false, at: "LockON#s1:then"},
+              {sets: "bOrientRotationToMovement", to: true, at: "LockON#s1:then"}]}
+  - {id: LO-18, kind: derived, text: "While locked the facing update runs every 0.01 s; releasing stops it", measure: "K2_SetTimer(self, ToggleLockOn, 0.01, looping) at SetLockOnTarget#s6 / #s14; K2_PauseTimer at LockON#s6",
+     effect: [{calls: "K2_SetTimer", args: ["ToggleLockOn", "0.01", "true"], at: "SetLockOnTarget#s1:then"},
+              {calls: "K2_SetTimer", args: ["ToggleLockOn", "0.01", "true"], at: "SetLockOnTarget#s9:else"},
+              {calls: "K2_PauseTimer", args: ["ToggleLockOn"], at: "LockON#s1:then"}]}
+  - {id: LO-19, kind: derived, text: "With no enemy in range, lock-on locks with no target and keeps the direction Frank faced", measure: "LockON#s10:then (RotationInstance = last rotation, LockedOnTarget = None, SetLockOnTarget); NewControlRotation#s1:else returns RotationInstance",
+     effect: [{branches: "Out_Actors", at: "LockON#s10"},
+              {sets: "RotationInstance", at: "LockON#s10:then"},
+              {sets: "LockedOnTarget", to: "nothing", at: "LockON#s10:then"},
+              {calls: "SetLockOnTarget", at: "LockON#s10:then"},
+              {sets: "LockOnTargetRotator", to: "RotationInstance", at: "NewControlRotation#s1:else"}]}
+  # facing (UC-LO4)
+  - {id: LO-20, kind: derived, text: "While locked on a valid target, every update turns the controller toward the target (RInterpTo, delta 0.1, speed 2), keeping its roll", measure: "NewControlRotation#s1:then; SetControlRotation at ToggleLockOn#s2",
+     effect: [{branches: "LockedOnTarget", at: "NewControlRotation#s1"},
+              {calls: "RInterpTo", args: ["0.1", "2"], at: "NewControlRotation#s1:then"},
+              {calls: "BreakRotator", args: ["Roll"], at: "NewControlRotation#s1:then"},
+              {calls: "SetControlRotation", args: ["NewControlRotation_Rotator_1"], at: "ToggleLockOn#s2"}]}
+  - {id: LO-21, kind: derived, text: "Every update also records where Frank aims: the target's location, or one unit ahead of him with no target", measure: "TargetLocation at NewControlRotation#s6 and #s10",
+     effect: [{sets: "TargetLocation", to: "LockedOnTarget.K2_GetActorLocation()", at: "NewControlRotation#s1:then"},
+              {sets: "TargetLocation", to: "(K2_GetActorLocation() + GetActorForwardVector())", at: "NewControlRotation#s1:else"}]}
+  # cycling (UC-LO5)
+  - {id: LO-30, kind: derived, text: "Cycling works only while locked, on a valid target, with at least one enemy in front", measure: "ConeCycle#s1, #s2, #s3",
+     effect: [{branches: "LockedOn", at: "ConeCycle#s1"},
+              {branches: "LockedOnTarget", at: "ConeCycle#s2"},
+              {branches: "ConeActors", at: "ConeCycle#s3"}]}
+  - {id: LO-31, kind: derived, text: "Cycling moves the target to the next enemy in front, from the last back to the first, telling the old and the new target", measure: "ConeCycle#s4: Array_Find == Array_LastIndex -> ConeActors[0], else ConeActors[Find + 1]",
+     effect: [{branches: "LockedOnTarget", at: "ConeCycle#s4"},
+              {sets: "LockedOnTarget", to: "ConeActors[0]", at: "ConeCycle#s4:then"},
+              {sets: "LockedOnTarget", at: "ConeCycle#s4:else"}]}
+  - {id: LO-32, kind: derived, text: "A target that is not among the enemies in front cycles to the first of them", measure: "Array_Find returns INDEX_NONE (-1) for a missing item (KismetArrayLibrary.cpp:549-567), so ConeActors[Find + 1] at ConeCycle#s9 is ConeActors[0]",
+     effect: [{calls: "Array_Find", args: ["ConeActors", "LockedOnTarget"], at: "ConeCycle#s9"},
+              {sets: "LockedOnTarget", to: "ConeActors[(KismetArrayLibrary.Array_Find(ConeActors, LockedOnTarget) + 1)]", at: "ConeCycle#s9"}]}
+  # death and release (UC-LO6, UC-LO7)
+  - {id: LO-40, kind: derived, text: "An enemy that reports its death stops being a candidate, in range and in front", measure: "Array_RemoveItem on Out_Actors and ConeActors at EnemyDeath#s1-#s2",
+     effect: [{sets: "Out_Actors", by: "Array_RemoveItem", at: "EnemyDeath#s1"},
+              {sets: "ConeActors", by: "Array_RemoveItem", at: "EnemyDeath#s2"}]}
+  - {id: LO-41, kind: derived, text: "Releasing the lock clears it: Frank stands, turns with his movement, the facing update stops and the target is told", measure: "LockON#s1:then, #s2-#s8",
+     effect: [{sets: "LockedOn", to: false, at: "LockON#s1:then"},
+              {calls: "UnCrouch", at: "LockON#s1:then"},
+              {sets: "bOrientRotationToMovement", to: true, at: "LockON#s1:then"},
+              {calls: "K2_PauseTimer", args: ["ToggleLockOn"], at: "LockON#s1:then"},
+              {calls: "LockOnInterface", at: "LockON#s7:then"}]}
+
+  # INFERRED: the questions the chain raises that only the author can answer (each is a likely defect or an undecided design)
+  - {id: IR-LO-1, kind: inferred, text: "A search that finds no candidate closer than 4000 must not keep a target an earlier event left, nor ask whether a missing target is dead", measure: "a path through LockON where LockOnDone never runs reaches #s22 / #s32", why: "LockedOnTarget is set to None at LockON#s12 and replaced only inside the loop; LockON#s22 and #s32 read LockedOnTarget.IsDead with no IsValid test (Q-NONE)",
+     effect: [{calls: "IsValid", args: ["LockedOnTarget"], at: "LockON#s21:then"},
+              {calls: "IsValid", args: ["LockedOnTarget"], at: "LockON#s31:then"}]}
+  - {id: IR-LO-2, kind: inferred, text: "NoFalse must record something the search finds; today every candidate sets it to true, so its test after the loop always passes", measure: "every path through LockON that sets NoFalse before #s21 / #s31 sets it true", why: "Q-CONST: the flag cannot change the outcome it guards",
+     effect: {absent: "what NoFalse should record is the owner's design (Q-CONST): no assertion can be written before it is said"}}
+  - {id: IR-LO-3, kind: inferred, text: "An enemy must be listed once even when two of its parts overlap the range or the cone", measure: "Array_Add without a Contains test at both Begin overlap events", why: "Q-ADD: the same actor fires one overlap per overlapping component",
+     effect: [{sets: "Out_Actors", by: "Array_AddUnique", at: "OnComponentBeginOverlap(LockOnSphere)#s1:then"},
+              {sets: "ConeActors", by: "Array_AddUnique", at: "OnComponentBeginOverlap(LockOnCone)#s1:then"}]}
+  - {id: IR-LO-4, kind: inferred, text: "LockON, LockOnDone and SetLockOnTarget are events fired like function calls: decide whether they are functions", measure: "calls to them at LockON#s13/#s19/#s23/#s29/#s33 and the Begin/End overlap events", why: "Q-EVENTCALL: an event cannot return a value, and anything may fire it",
+     effect: {absent: "whether LockON, LockOnDone and SetLockOnTarget become functions is the owner's design (Q-EVENTCALL)"}}
+  - {id: IR-LO-5, kind: inferred, text: "When the target dies the lock must move on or end; today nothing releases it and the facing update keeps running", measure: "EnemyDeath#s1-#s2 only remove the enemy from the lists; ToggleLockOn is paused only at LockON#s6", why: "Q-TIMER.ToggleLockOn and Q-WRITE.LockedOnTarget: no writer clears the lock on a death",
+     effect: [{branches: "LockedOnTarget", at: "EnemyDeath"}]}
+  - {id: IR-LO-6, kind: inferred, text: "The distance must be to Frank, not to whatever the trace hits first", measure: "LO-7: another enemy or a wall between them makes an enemy look closer", why: "Q-DEBUG / LO-7: the trace's first hit is not necessarily Frank",
+     effect: [{calls: "GetDistanceTo", at: "DistanceToFrank"}]}
+  - {id: IR-LO-7, kind: inferred, text: "An enemy whose trace hits nothing must not read as 0 units away", measure: "a raycast resets its hit to FHitResult() (SceneQuery.cpp:321-326), whose Init() zeroes Distance (HitResult.h:148-180); DistanceToFrank#s2 stores it, and 0 wins every search", why: "the trace's miss is not tested before its distance is stored",
+     effect: [{branches: "LineTraceSingleForObjects", at: "DistanceToFrank"}]}
+  - {id: IR-LO-8, kind: inferred, text: "The distance trace must not draw debug lines in a shipped game", measure: "EDrawDebugTrace.ForDuration at DistanceToFrank#s1, every 0.01 s for every enemy in range", why: "Q-DEBUG",
+     effect: [{calls: "LineTraceSingleForObjects", args: ["EDrawDebugTrace.None"], at: "DistanceToFrank#s1"}]}
+  - {id: IR-LO-9, kind: inferred, text: "What an enemy does when told it is (or is no longer) the target is not in the pastes", measure: "the LockOnInterface handler lives on Master_Enemy, whose graphs were not pasted", why: "the chain needs the player to see the target marked (EPIC-LO's evaluation gulf) and nothing pasted does it",
+     effect: {absent: "Master_Enemy's LockOnInterface handler is not in the pastes: nothing here can be asserted until it is"}}
+  - {id: IR-LO-10, kind: inferred, text: "The two copies disagree: ToggleLockOn's call expects a second output (Character) that NewControlRotation does not declare", measure: "2 out arguments at ToggleLockOn#s1, 1 output in NewControlRotation's header", why: "Q-SIG: one of the pasted copies holds a stale node",
+     effect: {absent: "a stale node in one of two pasted copies (Q-SIG): no assertion over the converted code tells the copies apart"}}
+  - {id: IR-LO-11, kind: inferred, text: "Functions a timer runs must be called so that a rename is caught", measure: "DistanceToFrank and ToggleLockOn are named in strings at 5 timer calls", why: "Q-NAME: a rename breaks them silently",
+     effect: [{calls: "K2_SetTimerDelegate", at: "OnComponentBeginOverlap(LockOnSphere)#s1:then"}]}
+  - {id: IR-LO-12, kind: inferred, text: "Say which is the lock range: the 4000 a search starts from, or MaxDistance", measure: "4000 at LockON#s9, MaxDistance at SetLockOnTarget#s1 / #s9", why: "Q-LITERAL.LockON#s9: two numbers bound one distance",
+     effect: {absent: "which number bounds the lock, 4000 or MaxDistance, is the owner's to say (Q-LITERAL)"}}
+  - {id: IR-LO-13, kind: inferred, text: "The update rate (0.01 s) is written into three timers: one setting or three?", measure: "0.01 at OnComponentBeginOverlap(LockOnSphere)#s3, SetLockOnTarget#s6, #s14", why: "Q-LITERAL on the timers",
+     effect: {absent: "one update-rate setting or three is the owner's design (Q-LITERAL)"}}
+  - {id: IR-LO-14, kind: inferred, text: "The turn smoothing must match the update rate: it assumes 0.1 s between updates while they come every 0.01 s", measure: "RInterpTo moves Delta * clamp(Speed * DeltaTime) per call (UnrealMath.cpp:2671-2697): 20% of the remaining turn per call, 100 calls a second - about 2e-10 of a turn left after one second where 0.1 s updates would leave 11%", why: "Q-LITERAL.NewControlRotation#s5",
+     effect: [{calls: "GetWorldDeltaSeconds", at: "NewControlRotation#s1:then"}]}
+  - {id: IR-LO-15, kind: inferred, text: "Choosing the lock again (an enemy enters, the target leaves) must tell the old target it is no longer the target", measure: "OnComponentBeginOverlap(LockOnSphere)#s5 / OnComponentEndOverlap(LockOnSphere)#s6 set LockedOn = false, so LockON takes the lock branch; only the release branch (LockON#s8) tells the old target", why: "Q-WRITE.LockedOn: four graphs write the lock flag",
+     effect: [{calls: "LockOnInterface", at: "OnComponentBeginOverlap(LockOnSphere)#s4:then"},
+              {calls: "LockOnInterface", at: "OnComponentEndOverlap(LockOnSphere)#s5:then"}]}
+  - {id: IR-LO-17, kind: inferred, text: "The search must read the distance the enemy measures: as pasted, the enemy writes DistanceToFrankVar and the search reads Distance to Frank Var - two different variables", measure: "MemberGuid E15AC5A1... written at DistanceToFrank#s2; MemberGuid 76A01C23... read at LockON#s18/#s28 and LockOnDone#s2 (a rename keeps the guid, so these are not one variable renamed)", why: "Q-UNWRITTEN.Distance_to_Frank_Var: nothing in the set writes the variable the search compares",
+     effect: [{sets: "Distance_to_Frank_Var", at: "DistanceToFrank#s2"}]}
+  - {id: IR-LO-18, kind: inferred, text: "Whoever kills an enemy must set its IsDead, and the order against EnemyDeath must be said", measure: "IsDead is read at LockON#s22 / #s32 and written nowhere in the pastes", why: "Q-UNWRITTEN.IsDead",
+     effect: {absent: "IsDead is written by the enemy's own death logic, which is not in the pastes"}}
+  - {id: IR-LO-16, kind: inferred, text: "The player must learn when a lock fails: nobody close enough, or the chosen target dead", measure: "LockON#s22:else and SetLockOnTarget#s9:then do nothing", why: "Q-ELSE on both: the player's evaluation gulf has no answer there",
+     effect: {absent: "what the player sees when a lock fails (a sound, a mark) is the owner's design (Q-ELSE)"}}

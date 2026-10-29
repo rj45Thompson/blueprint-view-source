@@ -1,0 +1,16 @@
+{
+    "name": "U2ue.BlueprintView.Editor",
+    "rootNamespace": "U2ue.BlueprintView.Editor",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

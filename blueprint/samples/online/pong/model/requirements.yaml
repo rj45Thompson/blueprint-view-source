@@ -1,0 +1,33 @@
+# What the Pong ball and paddle do, READ from their nodes (derived: the code spaces in generated.yaml map each one), and what the chain
+# needs that the code does not say (inferred: each `why` is the question, for the Blueprint's author). `measure` says where it shows;
+# `effect` is what the converted code must hold, checked by tools/logic_map.py (EffectCheck) and planted the other way.
+requirements:
+  # the ball (UC-PG1, UC-PG2, UC-PG4, UC-PG5)
+  - {id: PG-1, kind: derived, text: "When play begins the ball is served: its velocity becomes a random direction at most 30 degrees off -X, flat on the table (Z = 0)", measure: "RandomUnitVectorInConeInDegrees((-1, 0, 0), 30) at ReceiveBeginPlay#s2; Velocity = (its X, its Y, 0) at ReceiveBeginPlay#s1",
+     effect: [{calls: "RandomUnitVectorInConeInDegrees", args: ["30"], at: "ReceiveBeginPlay#s2"},
+              {sets: "Velocity", at: "ReceiveBeginPlay#s1"}]}
+  - {id: PG-2, kind: derived, text: "Every frame the ball moves by its velocity times its Speed times the frame's time, swept: it triggers overlaps on the way and stops short of anything that blocks it", measure: "K2_AddActorWorldOffset(Velocity x (DeltaSeconds x Speed), bSweep = true) at ReceiveTick(BP_Ball)#s1; the sweep as the engine documents it (Actor.h:1747)",
+     effect: [{calls: "K2_AddActorWorldOffset", args: ["true"], at: "ReceiveTick(BP_Ball)#s1"}]}
+  - {id: PG-3, kind: derived, text: "A paddle turns the ball back: when the ball begins to overlap a BP_Paddle, the X of its velocity changes sign; any other actor leaves X as it was", measure: "OtherActor is BP_Paddle at OnComponentBeginOverlap(Sphere)#s1; X = Velocity.X x -1 at #s2; nothing on the else side",
+     effect: [{branches: "BP_Paddle", at: "OnComponentBeginOverlap(Sphere)#s1"},
+              {sets: "Velocity", at: "OnComponentBeginOverlap(Sphere)#s1:then"}]}
+  - {id: PG-4, kind: derived, text: "A wall turns the ball: when it begins to overlap a BP_Wall, the Y of its velocity changes sign; any other actor leaves Y as it was", measure: "OtherActor is BP_Wall at OnComponentBeginOverlap(Sphere)#s3; Y = Velocity.Y x -1 at #s4; nothing on the else side",
+     effect: [{branches: "BP_Wall", at: "OnComponentBeginOverlap(Sphere)#s3"},
+              {sets: "Velocity", at: "OnComponentBeginOverlap(Sphere)#s3:then"}]}
+  - {id: PG-7, kind: derived, text: "A goal serves the ball again: when it begins to overlap a BP_Goal it is put back at the origin and given a new random direction at most 30 degrees off -X, flat; any other actor changes nothing more", measure: "OtherActor is BP_Goal at #s5; K2_SetActorLocation((0, 0, 0)) at #s6; RandomUnitVectorInConeInDegrees((-1, 0, 0), 30) at #s8; Velocity at #s7",
+     effect: [{branches: "BP_Goal", at: "OnComponentBeginOverlap(Sphere)#s5"},
+              {calls: "K2_SetActorLocation", at: "OnComponentBeginOverlap(Sphere)#s5:then"},
+              {calls: "RandomUnitVectorInConeInDegrees", args: ["30"], at: "OnComponentBeginOverlap(Sphere)#s5:then"},
+              {sets: "Velocity", at: "OnComponentBeginOverlap(Sphere)#s5:then"}]}
+  # the paddle (UC-PG3)
+  - {id: PG-5, kind: derived, text: "Pushing the MovePaddle axis sets the paddle's velocity along -Y, scaled by how far the axis is pushed: at rest the paddle stands still", measure: "Velocity = (0, -1, 0) x AxisValue at InputAxisMovePaddle#s1",
+     effect: [{sets: "Velocity", at: "InputAxisMovePaddle#s1"}]}
+  - {id: PG-6, kind: derived, text: "Every frame the paddle moves by its velocity times its Speed times the frame's time, swept like the ball", measure: "K2_AddActorWorldOffset(Velocity x (DeltaSeconds x Speed), bSweep = true) at ReceiveTick(BP_Paddle)#s1",
+     effect: [{calls: "K2_AddActorWorldOffset", args: ["true"], at: "ReceiveTick(BP_Paddle)#s1"}]}
+  # what the chain needs that the pastes do not say: each a question for the author
+  - {id: IR-PG-1, kind: inferred, text: "A ball that reaches a goal scores a point for the player at the other end, and the score is shown", measure: "a goal's overlap (OnComponentBeginOverlap(Sphere)#s5:then) serves the ball again and writes nothing else: no score exists in the pastes", why: "the epic's last step ends a rally, and Pong is played to a score: what is a point, where is it kept, who sees it?",
+     effect: {absent: "what a point is and where it is kept is the owner's design: the pastes hold no score an assertion could name"}}
+  - {id: IR-PG-2, kind: inferred, text: "The ball's Speed and the paddle's Speed are each set before play, to values the author names", measure: "Speed is read at ReceiveTick(BP_Ball)#s1 and ReceiveTick(BP_Paddle)#s1 and written nowhere in the pastes", why: "Q-UNWRITTEN.BP_Ball.Speed and Q-UNWRITTEN.BP_Paddle.Speed: two class defaults the pastes do not hold, or code that was not pasted?",
+     effect: {absent: "the values live in the two Blueprints' class defaults, which a paste of their graphs does not carry"}}
+  - {id: IR-PG-3, kind: inferred, text: "Which end a serve goes toward, and how wide it may spread, are named design values; today every serve, the first and each after a goal, goes within 30 degrees of -X, toward the same end", measure: "RandomUnitVectorInConeInDegrees((-1, 0, 0), 30) written into ReceiveBeginPlay#s2 and OnComponentBeginOverlap(Sphere)#s8 alike", why: "Q-LITERAL at both serves: Pong serves toward the player who conceded, or alternates - which is meant, and who may change the 30?",
+     effect: {absent: "which end a serve goes toward is the owner's design (Q-LITERAL): no assertion can be written before it is said"}}

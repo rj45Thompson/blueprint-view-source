@@ -1,0 +1,5 @@
+# Outcomes the converted graphs hold that cannot happen, each with the reason (tools/logic_map.py writes them as excluded cells, and
+# every path through one as excluded - dealt with by the requirements, not left uncovered).
+exclusions:
+  - {ref: "LockON#s15:skip", why: "the loop runs over Out_Actors on the branch where LockON#s10 found Out_Actors not empty"}
+  - {ref: "LockON#s25:skip", why: "the loop runs over ConeActors on the branch where LockON#s14 found ConeActors not empty"}

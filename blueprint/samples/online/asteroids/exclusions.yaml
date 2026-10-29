@@ -1,0 +1,4 @@
+# Outcomes that cannot happen, each with the reason (tools/logic_map.py: dealt with, not ignored). A path through one is excluded too.
+exclusions:
+  - ref: "ReduceLives#s3:then"
+    why: "the test is the literal false: the DoOnce's Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)"

@@ -1,0 +1,112 @@
+# Pong's use cases, read top down from the epic. Each step's `code:` cites the converted graph it realises (tools/logic_map.py
+# resolves every cite and writes the code spaces in generated.yaml): `Alias` a graph, `Alias#sN` a statement, `Alias#sN:then|else`
+# one outcome of a decision. An extension's cites are the outcome that takes that pathway.
+usecases:
+  - id: EPIC-PG
+    name: Play a rally of Pong
+    level: kite
+    actor: P1
+    supporting: [SYS-BALL, SYS-PADDLE, SYS-UE]
+    trigger: "play begins"
+    pre: "the level holds the ball and the paddles, walls and goals it can touch (the level is not in the pastes)"
+    minimal: "a ball that gets past a paddle comes back into play from the middle"
+    success: "the ball goes back and forth between the paddles, turning off the walls, until one player lets it past"
+    why: "keeping a ball in play against an opponent is the whole of Pong"
+    gulf:
+      exec: {text: "pushes the paddle's axis up or down", reqs: [PG-5]}
+      eval: {text: "sees the paddle move, and the ball turn back off it", reqs: [PG-6, PG-3]}
+    steps:
+      - {do: "The ball is served from the middle in a random direction", reqs: [PG-1]}
+      - {do: "The ball crosses the table, a little further every frame", reqs: [PG-2]}
+      - {do: "The player moves the paddle into the ball's path", reqs: [PG-5, PG-6]}
+      - {do: "The ball turns back off the paddle, and off the walls", reqs: [PG-3, PG-4]}
+      - {do: "A ball that gets past a paddle reaches a goal and is served again", reqs: [PG-7]}
+    ext:
+      - {at: 5, when: "the ball reaches a goal", do: ["nobody scores: the rally starts again and no point is counted"], out: end minimal, reqs: [IR-PG-1]}
+      - {at: 1, when: "a goal serves the ball again", do: ["it goes toward -X every time, whichever end let it past"], out: rejoin 2, reqs: [IR-PG-3]}
+
+  - id: UC-PG1
+    name: Serve the ball
+    level: fish
+    parent: {uc: EPIC-PG, step: 1}
+    actor: SYS-BALL
+    trigger: "play begins for the ball (BeginPlay)"
+    pre: "the ball is placed in the level"
+    minimal: "the ball has a direction to move in"
+    success: "Velocity is a direction at most 30 degrees off -X, flat on the table"
+    why: "a rally starts with a serve"
+    # one Blueprint SET fed by one pure node: the converter writes it as two statements (the pure call hoisted in front), one step
+    steps:
+      - {do: "Play begins for the ball", reqs: [PG-1], code: ["ReceiveBeginPlay"]}
+      - {do: "Its velocity becomes a random direction within 30 degrees of -X, flat on the table", reqs: [PG-1, IR-PG-3], code: ["ReceiveBeginPlay#s2", "ReceiveBeginPlay#s1"]}
+
+  - id: UC-PG2
+    name: Move the ball
+    level: fish
+    parent: {uc: EPIC-PG, step: 2}
+    actor: SYS-BALL
+    trigger: "a frame ticks for the ball (Tick)"
+    pre: "a serve has set Velocity"
+    minimal: "a move blocked by something stops short of it"
+    success: "the ball is Velocity x Speed x the frame's time further on"
+    why: "the ball must cross the table to reach a player"
+    steps:
+      - {do: "A frame ticks for the ball", reqs: [PG-2], code: ["ReceiveTick(BP_Ball)"]}
+      - {do: "It moves by its velocity times its speed times the frame's time, swept", reqs: [PG-2, IR-PG-2], code: ["ReceiveTick(BP_Ball)#s1"]}
+
+  - id: UC-PG3
+    name: Move the paddle
+    level: sea
+    parent: {uc: EPIC-PG, step: 3}
+    actor: P1
+    supporting: [SYS-PADDLE]
+    trigger: "the player pushes the MovePaddle axis"
+    pre: "MovePaddle is bound to an input in the project's settings (not in the pastes)"
+    minimal: "with the axis at rest the paddle stands still"
+    success: "the paddle moves along Y as far and as fast as the axis is pushed"
+    why: "the player keeps the ball in play with the paddle"
+    gulf:
+      exec: {text: "pushes the MovePaddle axis up or down, a little or all the way", reqs: [PG-5]}
+      eval: {text: "sees the paddle slide along the table, faster the further the axis is pushed", reqs: [PG-6]}
+    steps:
+      - {do: "The player pushes the MovePaddle axis", reqs: [PG-5], code: ["InputAxisMovePaddle"]}
+      - {do: "The paddle's velocity points along -Y, scaled by the push", reqs: [PG-5], code: ["InputAxisMovePaddle#s1"]}
+      - {do: "Each frame the paddle moves by that velocity times its speed times the frame's time, swept", reqs: [PG-6, IR-PG-2], code: ["ReceiveTick(BP_Paddle)", "ReceiveTick(BP_Paddle)#s1"]}
+    ext:
+      - {at: 2, when: "the axis is at rest", do: ["the velocity is zero and the paddle stands still"], out: end minimal, reqs: [PG-5]}
+
+  - id: UC-PG4
+    name: Turn the ball back
+    level: fish
+    parent: {uc: EPIC-PG, step: 4}
+    actor: SYS-BALL
+    trigger: "the ball's Sphere begins to overlap another actor"
+    pre: "paddles and walls overlap the ball rather than block it (their collision settings are not in the pastes)"
+    minimal: "an actor that is neither a paddle nor a wall leaves the ball's direction as it was"
+    success: "a paddle turns the ball's X around, a wall its Y"
+    why: "the ball must come back across the table"
+    steps:
+      - {do: "The ball's sphere begins to overlap something", reqs: [PG-3, PG-4], code: ["OnComponentBeginOverlap(Sphere)"]}
+      - {do: "A paddle turns the ball's X velocity around", reqs: [PG-3], code: ["OnComponentBeginOverlap(Sphere)#s1:then", "OnComponentBeginOverlap(Sphere)#s2"]}
+      - {do: "A wall turns its Y velocity around", reqs: [PG-4], code: ["OnComponentBeginOverlap(Sphere)#s3:then", "OnComponentBeginOverlap(Sphere)#s4"]}
+    ext:
+      - {at: 2, when: "the actor is not a paddle", do: ["X is left as it is"], out: rejoin 3, reqs: [PG-3], code: ["OnComponentBeginOverlap(Sphere)#s1:else"]}
+      - {at: 3, when: "the actor is not a wall", do: ["Y is left as it is"], out: end success, reqs: [PG-4], code: ["OnComponentBeginOverlap(Sphere)#s3:else"]}
+
+  - id: UC-PG5
+    name: Serve again after a goal
+    level: fish
+    parent: {uc: EPIC-PG, step: 5}
+    actor: SYS-BALL
+    trigger: "the ball's Sphere begins to overlap a goal"
+    pre: "goals overlap the ball rather than block it"
+    minimal: "the ball comes back into play"
+    success: "the ball is back at the origin, moving in a new random direction within 30 degrees of -X"
+    why: "a rally that ends must start again"
+    steps:
+      - {do: "The ball touches a goal", reqs: [PG-7], code: ["OnComponentBeginOverlap(Sphere)#s5:then"]}
+      - {do: "It is put back at the origin", reqs: [PG-7], code: ["OnComponentBeginOverlap(Sphere)#s6"]}
+      - {do: "It is served again within 30 degrees of -X", reqs: [PG-7, IR-PG-3], code: ["OnComponentBeginOverlap(Sphere)#s8", "OnComponentBeginOverlap(Sphere)#s7"]}
+    ext:
+      - {at: 1, when: "the actor is not a goal", do: ["nothing more happens"], out: end success, reqs: [PG-7], code: ["OnComponentBeginOverlap(Sphere)#s5:else"]}
+      - {at: 2, when: "the goal is reached", do: ["no point is counted for anyone"], out: rejoin 3, reqs: [IR-PG-1]}

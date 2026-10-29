@@ -1,0 +1,67 @@
+# S-Q: every question the brainstorm rules (view/trace.js QuestionRules) raise over the converted Lock-On graphs, each ANSWERED by
+# the requirement that settles it - a derived one when the code already says what happens, an inferred one when only the author can
+# say. The keys are read by the gap checker itself from the trace's questions.txt: a question nobody answered is a U7 hole, and a
+# question that stops being raised (the code changed) is a stale cell. A brainstorm at every step is what keeps the requirements a
+# closed loop.
+spaces:
+  - id: S-Q
+    title: every question the brainstorm rules raise over the Lock-On graphs
+    basis: brainstorm
+    kind: extract
+    file: ../trace/questions.txt
+    pattern: '(?m)^question (\S+) ::'
+    cells:
+      "Q-ADD.OnComponentBeginOverlap(LockOnCone)#s2": [IR-LO-3]
+      "Q-ADD.OnComponentBeginOverlap(LockOnSphere)#s2": [IR-LO-3]
+      "Q-CONST.LockON#s21": [IR-LO-2]
+      "Q-CONST.LockON#s31": [IR-LO-2]
+      "Q-DEBUG.DistanceToFrank#s1": [IR-LO-8]
+      "Q-DUP.SetLockOnTarget#s1:then": [LO-15]            # one rule (at most MaxDistance), written once for < and again for ==
+      "Q-ELSE.ConeCycle#s1": [LO-30]
+      "Q-ELSE.ConeCycle#s2": [LO-30]
+      "Q-ELSE.ConeCycle#s3": [LO-30]
+      "Q-ELSE.LockON#s20": [LO-13]                        # the > test does nothing either way: a candidate no closer is passed over
+      "Q-ELSE.LockON#s21": [IR-LO-2]
+      "Q-ELSE.LockON#s22": [LO-14, IR-LO-16]
+      "Q-ELSE.LockON#s30": [LO-13]
+      "Q-ELSE.LockON#s31": [IR-LO-2]
+      "Q-ELSE.LockON#s32": [LO-14, IR-LO-16]
+      "Q-ELSE.LockON#s7": [LO-41]                         # no valid target to tell on release
+      "Q-ELSE.OnComponentBeginOverlap(LockOnCone)#s1": [LO-5]
+      "Q-ELSE.OnComponentBeginOverlap(LockOnSphere)#s1": [LO-1]
+      "Q-ELSE.OnComponentBeginOverlap(LockOnSphere)#s4": [LO-3]
+      "Q-ELSE.OnComponentEndOverlap(LockOnCone)#s1": [LO-5]
+      "Q-ELSE.OnComponentEndOverlap(LockOnSphere)#s1": [LO-1]
+      "Q-ELSE.OnComponentEndOverlap(LockOnSphere)#s4": [LO-3]
+      "Q-ELSE.OnComponentEndOverlap(LockOnSphere)#s5": [LO-3]
+      "Q-ELSE.SetLockOnTarget#s15": [LO-19]
+      "Q-ELSE.SetLockOnTarget#s7": [LO-19]
+      "Q-ELSE.SetLockOnTarget#s9": [LO-15, IR-LO-16]
+      "Q-EQ.LockON#s18": [LO-13]                          # a tie is passed over: the first one found stays
+      "Q-EQ.LockON#s28": [LO-13]
+      "Q-EQ.SetLockOnTarget#s1": [LO-15]                  # equal to MaxDistance locks
+      "Q-EVENTCALL.LockON": [IR-LO-4]
+      "Q-EVENTCALL.LockOnDone": [IR-LO-4]
+      "Q-EVENTCALL.SetLockOnTarget": [IR-LO-4]
+      "Q-INDEX.ConeCycle#s6": [LO-30]                     # ConeActors[0] only runs after ConeCycle#s3 found it not empty
+      "Q-INDEX.ConeCycle#s9": [LO-31, LO-32]              # Find + 1 <= LastIndex here (the == LastIndex case took the other branch); a miss is -1 + 1 = 0
+      "Q-LITERAL.DistanceToFrank#s1": [IR-LO-8]           # 0.1 is the debug draw time
+      "Q-LITERAL.LockON#s9": [IR-LO-12]
+      "Q-LITERAL.NewControlRotation#s5": [IR-LO-14]
+      "Q-LITERAL.OnComponentBeginOverlap(LockOnSphere)#s3": [IR-LO-13]
+      "Q-LITERAL.SetLockOnTarget#s14": [IR-LO-13]
+      "Q-LITERAL.SetLockOnTarget#s6": [IR-LO-13]
+      "Q-NAME.DistanceToFrank": [IR-LO-11]
+      "Q-NAME.ToggleLockOn": [IR-LO-11]
+      "Q-NONE.LockON#s22.LockedOnTarget": [IR-LO-1]
+      "Q-NONE.LockON#s32.LockedOnTarget": [IR-LO-1]
+      "Q-NONE.LockOnDone#s2.LockedOnTarget": [LO-13, LO-40]   # set from the candidate one statement before; a dead enemy left the lists
+      "Q-SIG.NewControlRotation": [IR-LO-10]
+      "Q-TIMER.DistanceToFrank": [LO-2, IR-LO-5]          # paused when the enemy leaves; nothing pauses it when the enemy dies
+      "Q-TIMER.ToggleLockOn": [LO-18, IR-LO-5]            # paused on release; nothing pauses it when the target dies
+      "Q-UNWRITTEN.Distance_to_Frank_Var": [IR-LO-17]     # two MemberGuids: the measured variable and the searched one differ
+      "Q-UNWRITTEN.IsDead": [IR-LO-18]
+      "Q-UNWRITTEN.MaxDistance": [IR-LO-12]               # a default of the Blueprint's, which a clipboard copy does not carry
+      "Q-WRITE.ClosestTargetDistance": [LO-11, LO-13]     # one search: LockON resets it, LockOnDone lowers it, in that order
+      "Q-WRITE.LockedOn": [IR-LO-15]
+      "Q-WRITE.LockedOnTarget": [LO-13, LO-31, IR-LO-1, IR-LO-5]

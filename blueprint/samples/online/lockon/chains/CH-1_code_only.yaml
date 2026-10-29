@@ -1,0 +1,17 @@
+# A reasoning chain, LOGGED (tools/chain_check.py holds it to the node graph). The six claims are verbatim from this session's own
+# reading of the converted code (Claude, 2026-10-28 ~14:55Z, the message beginning "The converted C# makes the Blueprint's behaviour,
+# and its defects, plain to read"), written from the converted C# ALONE - before the trace, the model, the brainstorm rules or the
+# OO assembly existed. The cites were attached when the chain was logged: each names the statements the claim is about.
+chain:
+  id: CH-1
+  by: Claude (Opus 5.5), this session
+  from: the converted C# alone (samples/online/lockon/graphs/*.printed.txt), before the trace or the model existed
+  when: 2026-10-28 ~14:55Z
+  question: what is wrong with this Blueprint?
+  steps:
+    - {says: "When the locked target dies, the lock is never released.", cites: [EnemyDeath, EnemyDeath#s1, EnemyDeath#s2]}
+    - {says: "NoFalse is set to true on every pass of the loop, so the test after the loop always passes.", cites: [LockON#s17, LockON#s21]}
+    - {says: "If no enemy is closer than 4000, LockedOnTarget.IsDead is read on a possibly stale or null target.", cites: [LockON#s9, LockON#s22]}
+    - {says: "The same six-node lock-on chain is copy-pasted twice.", cites: ["SetLockOnTarget#s1:then", "SetLockOnTarget#s9:else"]}
+    - {says: "Each enemy line-traces at 100 Hz with debug drawing left on.", cites: [DistanceToFrank#s1, "OnComponentBeginOverlap(LockOnSphere)#s3"]}
+    - {says: "The caller's copy of NewControlRotation expects a Character output that the function no longer has.", cites: [ToggleLockOn#s1, NewControlRotation]}

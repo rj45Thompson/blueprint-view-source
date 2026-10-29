@@ -1,0 +1,46 @@
+# S-Q: every question the brainstorm rules (view/trace.js QuestionRules) raise over the converted asteroid shooter, each ANSWERED by
+# the requirement that settles it - a derived one when the code already says what happens (with the author's note where one agrees),
+# an inferred one when only the author can say. The keys are read by the gap checker itself from the trace's questions.txt: a
+# question nobody answered is a U7 hole.
+spaces:
+  - id: S-Q
+    title: every question the brainstorm rules raise over the asteroid shooter's graphs
+    basis: brainstorm
+    kind: extract
+    file: ../trace/questions.txt
+    pattern: '(?m)^question (\S+) ::'
+    cells:
+      "Q-CONST.ReduceLives#s3": [AS-18]                                           # Start Closed false: the first hit always counts
+      "Q-ELSE.CustomEvent_0#s1": [AS-6]                                           # nine rolls in ten spawn nothing: the 10% the author's note names
+      "Q-ELSE.OnComponentBeginOverlap(HitboxEnemy)#s1": [AS-14]                   # only a shot hurts a ship
+      "Q-ELSE.OnComponentBeginOverlap(Sphere)(BP_Asteorid)#s3": [AS-11]           # neither the ship nor a shot: nothing
+      "Q-ELSE.OnComponentBeginOverlap(Sphere)(BP_EnemyProjectile)#s1": [AS-17]    # a bullet only hurts the ship
+      "Q-ELSE.ReceiveBeginPlay(BP_EnemyProjectile)#s1": [IR-AS-12]
+      "Q-ELSE.ReceiveBeginPlay(BP_EnemyShip)#s2": [AS-13]                         # two ships in three never fire
+      "Q-ELSE.ReceiveBeginPlay(BP_Meteor)#s1": [IR-AS-12]
+      "Q-ELSE.ReceiveBeginPlay(TitleScreen)#s1": [IR-AS-12]
+      "Q-ELSE.ReceiveBeginPlay(TitleScreen)#s5": [IR-AS-12]
+      "Q-ELSE.ReceiveTick(BP_EnemyShip)#s5": [AS-12]                              # before the end of its path the ship flies on
+      "Q-ELSE.ReduceLives#s1": [AS-18]                                            # the DoOnce's setup runs once
+      "Q-ELSE.ReduceLives#s5": [AS-18]                                            # a hit while it is shut costs nothing: the invincibility
+      "Q-ELSE.ReduceLives#s8": [IR-AS-12]
+      "Q-LITERAL.AddScore#s2": [AS-24]                                            # the engine's own defaults, KismetTextLibrary.h:248
+      "Q-LITERAL.CustomEvent_0#s1": [AS-6]
+      "Q-LITERAL.OnComponentBeginOverlap(Sphere)(BP_Asteorid)#s4": [IR-AS-4]
+      "Q-LITERAL.ReceiveBeginPlay(BP_EnemyLogic)#s1": [AS-5]
+      "Q-LITERAL.ReceiveBeginPlay(BP_EnemyShip)#s2": [AS-13]
+      "Q-LITERAL.ReceiveBeginPlay(BP_Meteor)#s2": [AS-8]
+      "Q-LITERAL.ReceiveTick(BP_Asteorid)#s2": [IR-AS-7]
+      "Q-LITERAL.ReceiveTick(BP_EnemyShip)#s1": [IR-AS-6]
+      "Q-LITERAL.ReceiveTick(BP_EnemyShip)#s4": [IR-AS-7]
+      "Q-LITERAL.ReduceLives#s24": [IR-AS-3]
+      "Q-TIMER.CustomEvent_0": [IR-AS-8]
+      "Q-UNWRITTEN.BP_Asteorid.AimVector": [AS-8, IR-AS-1]                        # written by BP_Meteor's BeginPlay: the same variable by GUID
+      "Q-UNWRITTEN.BP_Asteorid.Speed": [IR-AS-2]
+      "Q-UNWRITTEN.BP_EnemyProjectile.Speed": [IR-AS-2]
+      "Q-UNWRITTEN.BP_Meteor.Speed": [IR-AS-2]
+      "Q-UNWRITTEN.DelayUntilShooting": [IR-AS-3]
+      "Q-UNWRITTEN.FlashInterval": [IR-AS-3]
+      "Q-UNWRITTEN.HitEnemyShipScore": [IR-AS-4]
+      "Q-UNWRITTEN.RotationSpeed": [IR-AS-2]
+      "Q-UNWRITTEN.Spline": [IR-AS-5]

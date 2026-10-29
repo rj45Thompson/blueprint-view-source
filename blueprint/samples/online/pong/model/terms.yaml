@@ -1,0 +1,11 @@
+# The words the Pong requirements are written in, each bound to the code names it means (the closed loop's L10): a word is defined by
+# the names it binds, and every name must exist in the converted code or the pasted text (tools/logic_map.py resolves them).
+terms:
+  - {term: "ball", binds: [BP_Ball], why: "the Blueprint whose graphs serve, move and turn it (its owner, read from its pins)"}
+  - {term: "paddle", binds: [BP_Paddle], why: "the Blueprint the player moves, and the class the cast at OnComponentBeginOverlap(Sphere)#s1 tests for"}
+  - {term: "wall", binds: [BP_Wall], why: "the class the cast at OnComponentBeginOverlap(Sphere)#s3 tests for"}
+  - {term: "goal", binds: [BP_Goal], why: "the class the cast at OnComponentBeginOverlap(Sphere)#s5 tests for"}
+  - {term: "velocity", binds: [Velocity], why: "the vector each Tick moves by (PG-2, PG-6)"}
+  - {term: "speed", binds: [Speed], why: "the scale each Tick multiplies the move by (IR-PG-2 asks for its values)"}
+  - {term: "serve", binds: [RandomUnitVectorInConeInDegrees], why: "the random direction both serves take (PG-1, PG-7)"}
+  - {term: "move", binds: [K2_AddActorWorldOffset], why: "the swept offset each Tick applies (PG-2, PG-6)"}

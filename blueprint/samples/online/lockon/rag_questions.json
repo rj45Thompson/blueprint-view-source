@@ -1,0 +1,12 @@
+[
+ {"id": "R1", "q": "What happens when the locked target dies?", "keys": ["EnemyDeath", "IR-LO-5"]},
+ {"id": "R2", "q": "Which enemy does lock-on pick?", "keys": ["LockOnDone", "Distance_to_Frank_Var", "LO-13"]},
+ {"id": "R3", "q": "How often does each enemy measure its distance to Frank, and who starts it?", "keys": ["K2_SetTimer", "DistanceToFrank", "0.01"]},
+ {"id": "R4", "q": "Why does Frank turn toward the target so fast?", "keys": ["RInterpTo", "IR-LO-14"]},
+ {"id": "R5", "q": "What does ConeCycle do after the last enemy in front?", "keys": ["ConeActors[0]", "Array_LastIndex"]},
+ {"id": "R6", "q": "Which graphs write LockedOn?", "keys": ["LockON#s2", "SetLockOnTarget#s2", "OnComponentBeginOverlap(LockOnSphere)#s5"]},
+ {"id": "R7", "q": "Does the search read a distance variable that nothing writes?", "keys": ["Distance to Frank Var", "IR-LO-17"]},
+ {"id": "R8", "q": "What class is FrankBP, and how do we know?", "keys": ["Character", "Crouch"]},
+ {"id": "R9", "q": "Why does Frank crouch when he locks on?", "keys": ["Crouch", "LO-16"]},
+ {"id": "R10", "q": "What stops the ToggleLockOn timer?", "keys": ["K2_PauseTimer", "ToggleLockOn", "LockON#s6"]}
+]

@@ -1,0 +1,69 @@
+# siljaZ's asteroid shooter (16 public pastes on blueprintue.com, UE 5.0, January 2023) as a use case model - checked by
+# .opus-tools/autobot/usecase_model.py. It adds a whole game to the samples, after the Pong hello world. No classic
+# Asteroids is pasted on blueprintue; this is the one whole asteroid game there. Mode: CODE-IS-SPEC (usecase-map step 0): the only
+# statement of intent is the Blueprints themselves. Every requirement is READ from a node (`derived`, sourced by the code spaces in
+# generated.yaml) or, where the chain needs what the code does not say, INFERRED - a question for the author, never an answer made up.
+meta:
+  subject: An asteroid shooter - the player turns a ship around the middle of the screen and fires into it, while asteroids and enemy ships come out of the middle; a hit costs a life, and the last life lost returns to the title
+  mode: code-is-spec
+  # a CLOSED LOOP: every requirement carries its effect, held to the code by tools/logic_map.py and to the criteria by
+  # autobot/usecase_kg.py loop. `entry`: the names the pasted graphs branch on but never write, each set outside the model
+  loop:
+    closed: true
+    entry:
+      - {name: BP_Character, why: "the class an overlap's other actor is tested for, and the player character's: the engine's, from the game's own classes"}
+      - {name: BP_Projectile, why: "the class an overlap's other actor is tested for: the engine reports it, from the shot's own Blueprint class"}
+      - {name: BP_Controller, why: "the class the player's controller is tested for: the game's player controller class, set in a game mode the pastes do not hold"}
+      - {name: RandomIntegerInRange, why: "the engine's random roll (KismetMathLibrary): chance, which nothing in the model writes - the 1 in 10 and 1 in 3 are the requirements, the roll is not"}
+      - {name: GetSplineLength, why: "the length of the ship's Spline, which the engine computes from the points built in BP_EnemyShip (IR-AS-5): nothing in the pastes writes it"}
+  story:
+    text: >-
+      The player sits on a ring around the middle of the screen and turns the ship around it, firing shots into the middle. Asteroids
+      and enemy ships come out of the middle at the ship, the ships firing back; a shot ship explodes and scores, a shot asteroid
+      scores. An asteroid or a bullet that reaches the ship costs a life, shown by three icons, and the ship flashes back in; with no
+      life left the game goes back to the title, where firing starts it again.
+    clauses:
+      - {text: "firing on the title screen starts the game (InputAction Shoot opens Level1 while b_IsTitleScreen is set)", source: BP-AS}
+      - {text: "the ship turns around the middle with one axis (Move Right / Left sets the control rotation's yaw)", source: BP-AS}
+      - {text: "a shot flies into the middle and is gone (BP_Projectile's Timeline lerps it to 0,0,0, then destroys it)", source: BP-AS}
+      - {text: "asteroids and enemy ships come out of the middle (BP_EnemyLogic spawns them at 0,0,0)", source: BP-AS}
+      - {text: "a shot ship explodes and scores, a shot asteroid scores (their overlap graphs)", source: BP-AS}
+      - {text: "an asteroid or a bullet that reaches the ship costs a life, and with none left the title opens (ReduceLives)", source: BP-AS}
+  human_loop:
+    - "B1 the player sees an asteroid or a ship coming out of the middle"
+    - "B2 turns the ship to face it and fires"
+    - "B3 sees the shot fly in and the target explode or score"
+    - "B4 sees the ship hit, an icon go, and the ship flash back in - or the title come back"
+
+actors:
+  - {id: P1, name: Player, kind: person, profile: "turns with the Move Right / Left axis and fires with Shoot; judges it by what blows up and what reaches the ship"}
+  - {id: SYS-CHAR, name: Ship, kind: system, profile: "BP_Character: Shoot, ReduceLives (the lives, the flashing, the game over); owner READ from its events"}
+  - {id: SYS-CTRL, name: Controller, kind: system, profile: "BP_Controller: the turning, the score widget, AddScore"}
+  - {id: SYS-SPAWN, name: Spawner, kind: system, profile: "BP_EnemyLogic: a timer that spawns asteroids, and CustomEvent_1 that spawns a ship"}
+  - {id: SYS-ROCK, name: Asteroid, kind: system, profile: "BP_Asteorid, which was BP_Meteor: its aim, its move and growth, its overlap"}
+  - {id: SYS-SHIP, name: Enemy ship, kind: system, profile: "BP_EnemyShip: its path, its one bullet, its overlap"}
+  - {id: SYS-BULLET, name: Enemy bullet, kind: system, profile: "BP_EnemyProjectile: its aim, its move, its overlap"}
+  - {id: SYS-SHOT, name: Shot, kind: system, profile: "BP_Projectile (its owner declared in SOURCES.json, with the reason): its Timeline flight"}
+  - {id: SYS-TITLE, name: Title screen, kind: system, profile: "the TitleScreen level's Blueprint (its owner declared in SOURCES.json): the title's camera and flag"}
+  - {id: SYS-UE, name: Unreal, kind: system, profile: "the engine: BeginPlay, Tick, overlap events, input, timers, Timelines, levels"}
+
+sources:
+  - {id: BP-AS, kind: code, path: ../SOURCES.json, cite: "16 of siljaZ's 23 pastes on blueprintue.com (profile/siljaz), UE 5.0, January 2023 - each listed with its URL and sha256"}
+  # the author's own words beside the code: each paste's comment boxes (NodeComment), 19 in all - read where a requirement cites one
+  - {id: BP-AS-NOTES, kind: quote, text: "Spawns an asteroid every two seconds with a 10% chance (BP_EnemyLogic_Asteroids.t3d); Spawns enemy ships every half a second (BP_EnemyLogic_Ships.t3d); Let's the enemy ships spawn a projectile a short time after spawning with a chance of 1/3 (BP_EnemyShip_Shooting.t3d); When hit an animation plays, the player position is reset and they grant invincibility frames and a blinking effect to indicate that (BP_Character_Lives.t3d); Rotating the player character to get the circular movement (BP_Controller_Move.t3d); Projectiles move towards the center of the screen (BP_Projectile.t3d)"}
+  - {id: BRIEF-AS, kind: standing, cite: "the set's brief: a whole game after the Pong hello world, played on its own converted code while its Blueprint is watched running"}
+  - {id: UE-SRC, kind: framework, cite: "Unreal Engine 5.7.1 source on this machine: K2Node_Event.cpp:523 (an event stands only in an event graph), StandardMacros DoOnce and DecrementInt (runs/ue_samples/out_engine/StandardMacros.t3d:340, :418), KismetMathLibrary.inl:1549 (a vector turned by a rotator), KismetTextLibrary.h:248 (Conv_DoubleToText's defaults: grouping on, at most 324 integral and 3 fractional digits)"}
+
+# The brainstorm a player would bring: each question inverts into the use case that answers it. The code's own questions (the
+# brainstorm rules of view/trace.js) are the S-Q space in answers.yaml.
+questions:
+  - {id: Q-P1-1, persona: P1, text: "How do I start a game?", inverse: UC-AS1}
+  - {id: Q-P1-2, persona: P1, text: "How do I turn the ship?", inverse: UC-AS2}
+  - {id: Q-P1-3, persona: P1, text: "Where do my shots go?", inverse: UC-AS3}
+  - {id: Q-P1-4, persona: P1, text: "Where do the asteroids and the ships come from, and how often?", inverse: UC-AS4}
+  - {id: Q-P1-5, persona: P1, text: "Why did that asteroid come straight at me?", inverse: UC-AS5}
+  - {id: Q-P1-6, persona: P1, text: "Why did that ship fire at me, and why did the next one not?", inverse: UC-AS7}
+  - {id: Q-P1-7, persona: P1, text: "Why did I lose a life, and why did the next hit cost nothing?", inverse: UC-AS9}
+  - {id: Q-P1-8, persona: P1, text: "Why didn't the asteroid I shot blow up?", inverse: UC-AS8}
+  - {id: Q-P1-9, persona: P1, text: "Where does my score come from?", inverse: UC-AS10}
+  - {id: Q-P1-10, persona: P1, text: "Where is that enemy ship going, and where does it go when it leaves?", inverse: UC-AS6}

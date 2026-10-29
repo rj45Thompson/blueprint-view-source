@@ -1,0 +1,28 @@
+{
+ "set": "pong",
+ "about": "A Pong ball and paddle (UE 4.18), two public pastes on blueprintue.com posted ten minutes apart on 2017-11-15 under the same 'Pong - ' prefix, by an anonymous author: the hello world before Lock-On, a small, complete game to meet the method on before that complex example. Authors keep the rights to their pastes (blueprintue.com/terms-of-service): the .t3d texts stay out of git; this manifest is the record. nodes/chars/title/author/ue are the browser's own read of each page (2026-10-28 20:1xZ), held against what tools/online_sample.py reads.",
+ "pastes": [
+  {
+   "name": "BP_Ball",
+   "url": "https://blueprintue.com/blueprint/oscal-o3/",
+   "title": "Pong - BP_Ball",
+   "author": "anonymous",
+   "ue": "4.18",
+   "nodes": 23,
+   "chars": 94825,
+   "sha256": "1c1fbb2ea9d3ffab4e0dfe6aca7f9defd290a410088dd3be29d7cd8e29bdff36",
+   "read": "2026-10-28 20:22Z"
+  },
+  {
+   "name": "BP_Paddle",
+   "url": "https://blueprintue.com/blueprint/fvpp3w_/",
+   "title": "Pong - BP_Paddle",
+   "author": "anonymous",
+   "ue": "4.18",
+   "nodes": 9,
+   "chars": 25731,
+   "sha256": "efc86d338c09900cdc8b91de186f8bf05475b9df9f00ab370610543d246c06b7",
+   "read": "2026-10-28 20:22Z"
+  }
+ ]
+}

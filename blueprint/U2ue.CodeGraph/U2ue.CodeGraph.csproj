@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    U2ue.CodeGraph - the Blueprint view's reader: C# source in, a graph of nodes a Blueprint reader knows out
+    (u2ue/blueprint/USECASES.md, u2ue/blueprint/PLAN.md). Semantic, not textual: Roslyn over the project's own sources with
+    the target framework's reference assemblies, so a call is classified by what it binds to (static, virtual, interface),
+    never by its spelling. Roslyn restores from the local package cache (the same version mvc_facets uses); nothing is
+    downloaded.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>U2ue.CodeGraph</RootNamespace>
+    <!-- the Unity package runs it with whatever runtime the user has: .NET 8, or a newer one when 8 is not installed -->
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+  </ItemGroup>
+
+</Project>

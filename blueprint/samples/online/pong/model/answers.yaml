@@ -1,0 +1,19 @@
+# S-Q: every question the brainstorm rules (view/trace.js QuestionRules) raise over the converted Pong graphs, each ANSWERED by the
+# requirement that settles it - a derived one when the code already says what happens, an inferred one when only the author can say.
+# The keys are read by the gap checker itself from the trace's questions.txt: a question nobody answered is a U7 hole.
+spaces:
+  - id: S-Q
+    title: every question the brainstorm rules raise over the Pong graphs
+    basis: brainstorm
+    kind: extract
+    file: ../trace/questions.txt
+    pattern: '(?m)^question (\S+) ::'
+    cells:
+      "Q-ELSE.OnComponentBeginOverlap(Sphere)#s1": [PG-3]                # not a paddle: X is left as it is, and the wall and goal tests still run
+      "Q-ELSE.OnComponentBeginOverlap(Sphere)#s3": [PG-4]                # not a wall: Y is left as it is
+      "Q-ELSE.OnComponentBeginOverlap(Sphere)#s5": [PG-7]                # not a goal: nothing more happens
+      "Q-LITERAL.OnComponentBeginOverlap(Sphere)#s8": [IR-PG-3]
+      "Q-LITERAL.ReceiveBeginPlay#s2": [IR-PG-3]
+      "Q-UNWRITTEN.BP_Ball.Speed": [IR-PG-2]
+      "Q-UNWRITTEN.BP_Paddle.Speed": [IR-PG-2]
+      "Q-WRITE.BP_Ball.Velocity": [PG-1, PG-3, PG-4, PG-7]               # each at its own moment: the serve at BeginPlay, a turn or a new serve when an overlap begins

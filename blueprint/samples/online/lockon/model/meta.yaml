@@ -1,0 +1,60 @@
+# The Lock-On System (hitted, blueprintue.com, UE 5.0) as a use case model - checked by .opus-tools/autobot/usecase_model.py.
+# Mode: CODE-IS-SPEC with suspicion (usecase-map step 0). The only statement of intent is the Blueprint itself: its names, its titles,
+# its logic. Every requirement here is READ from a node (`derived`, sourced by the code spaces in generated.yaml) or, where the chain
+# needs something the code does not say, INFERRED - a question for the Blueprint's author, never an answer made up for him.
+# Steps cite the converted graphs (`code:`, resolved by tools/logic_map.py): `Alias`, `Alias#sN`, `Alias#sN:outcome`.
+meta:
+  subject: hitted's Lock-On System - a third-person character locks on to the closest enemy, faces it, cycles between enemies, releases
+  mode: code-is-spec
+  # a CLOSED LOOP: every requirement carries its effect, held to the code by tools/logic_map.py and to the criteria by
+  # autobot/usecase_kg.py loop. `entry`: the names the pasted graphs branch on but never write - each is set outside the model, and
+  # each says where, so a branch on it is not a requirement nobody wrote
+  loop:
+    closed: true
+    entry:
+      - {name: Master_Enemy, why: "the class of the actor an overlap reports: the engine's, from the enemy's own Blueprint class"}
+      - {name: MaxDistance, why: "a variable default on FrankBP's class, which the pastes do not hold (IR-LO-12 asks which bound is meant)"}
+      - {name: IsDead, why: "written by the enemy's own death logic, which the pastes do not hold (IR-LO-18 asks who sets it, and when)"}
+      - {name: LineTraceSingleForObjects, why: "the trace's own return value (hit or not), the engine's (IR-LO-7 asks for the test)"}
+  story:
+    text: >-
+      A player fighting several enemies presses one button to lock Frank, their character, onto the closest enemy; Frank keeps facing
+      it while the player moves, the player can cycle to the next enemy in front, and pressing again releases the lock. To do that the
+      Blueprint keeps track of which enemies are near, which are in front and how far each one is.
+    clauses:
+      - {text: "one button locks on and the same button releases (the event LockON branches on LockedOn)", source: BP-LO}
+      - {text: "the lock goes to the closest enemy (LockOnDone keeps the smallest Distance to Frank)", source: BP-LO}
+      - {text: "Frank faces the target while locked (ToggleLockOn sets the control rotation from NewControlRotation)", source: BP-LO}
+      - {text: "the player can cycle to the next enemy in front (ConeCycle walks ConeActors)", source: BP-LO}
+      - {text: "the Blueprint tracks enemies in range and in front (the LockOnSphere and LockOnCone overlap events)", source: BP-LO}
+      - {text: "each enemy measures its own distance to Frank (DistanceToFrank, run by a timer on the enemy)", source: BP-LO}
+  human_loop:
+    - "B1 the player wants to face one enemy while moving"
+    - "B2 presses lock-on"
+    - "B3 sees Frank turn to an enemy, and the enemy marked"
+    - "B4 moves; Frank keeps facing it"
+    - "B5 cycles to another enemy, or the enemy dies or leaves"
+    - "B6 releases"
+
+actors:
+  - {id: P1, name: Player, kind: person, profile: "holds the controller: presses lock-on and cycle, moves while locked; judges it by where Frank faces"}
+  - {id: SYS-FRANK, name: Frank, kind: system, profile: "FrankBP, the player's character Blueprint: the event graph, ToggleLockOn, NewControlRotation (owner READ from the events' delegate pins)"}
+  - {id: SYS-ENEMY, name: Enemy, kind: system, profile: "Master_Enemy: runs DistanceToFrank on its own timer and answers LockOnInterface (its graphs were not pasted)"}
+  - {id: SYS-UE, name: Unreal, kind: system, profile: "the engine: overlap events, timers, character movement, traces"}
+
+sources:
+  - {id: BP-LO, kind: code, path: ../SOURCES.json, cite: "hitted's Lock-On System, blueprintue.com/blueprint/kg2evmas (UE 5.0) + Distance To Frank (cj7dxfjy), Toggle Lock On (bbhr3jku), New Control Rotation (img2fl86), linked by the author in its comments; read 2026-10-28, sha256 in SOURCES.json"}
+  - {id: BRIEF-LO, kind: standing, cite: "the set's brief: a real Blueprint posted online, badly written as many are, converted to code, with each piece of its logic mapped to a use case step, a class or a requirement that answers a brainstorm of questions (requirements chaining and the gap check)"}
+  - {id: UE-SRC, kind: framework, cite: "Unreal Engine 5.7.1 source on this machine, read for each engine rule a requirement cites (KismetArrayLibrary.cpp, UnrealMath.cpp, SceneQuery.cpp, HitResult.h, K2Node_*.cpp)"}
+
+# The brainstorm a person would bring, from which the use case hierarchy grows: each question inverts into
+# the use case that answers it. The code's own questions (the brainstorm rules of view/trace.js) are the S-Q space in answers.yaml.
+questions:
+  - {id: Q-P1-1, persona: P1, text: "Which enemy will it pick when I press lock-on?", inverse: UC-LO1}
+  - {id: Q-P1-2, persona: P1, text: "Why does Frank crouch when I lock on?", inverse: UC-LO1}
+  - {id: Q-P1-3, persona: P1, text: "Why did nothing happen when I pressed lock-on?", inverse: UC-LO1}
+  - {id: Q-P1-4, persona: P1, text: "Why does Frank snap to the target so fast?", inverse: UC-LO4}
+  - {id: Q-P1-5, persona: P1, text: "How do I switch to the next enemy?", inverse: UC-LO5}
+  - {id: Q-P1-6, persona: P1, text: "Why is Frank still facing an enemy that died?", inverse: UC-LO6}
+  - {id: Q-P1-7, persona: P1, text: "How do I stop being locked on?", inverse: UC-LO7}
+  - {id: Q-P1-8, persona: P1, text: "Why did it lock onto an enemy behind a wall?", inverse: UC-LO8}

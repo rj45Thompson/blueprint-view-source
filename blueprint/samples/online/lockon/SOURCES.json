@@ -1,0 +1,50 @@
+{
+ "set": "lockon",
+ "about": "hitted's Lock-On System (UE 5.0), a public paste on blueprintue.com: the event graph and the three functions its author linked in the paste's own comments (2022-04-12). Authors keep the rights to their pastes (blueprintue.com/terms-of-service): the .t3d texts stay out of git; this manifest is the record. nodes/chars/title/author/ue are the browser's own read of each page (2026-10-28 14:4xZ), held against what tools/online_sample.py reads.",
+ "pastes": [
+  {
+   "name": "LockOn_EventGraph",
+   "url": "https://blueprintue.com/blueprint/kg2evmas/",
+   "title": "Lock-On System",
+   "author": "hitted",
+   "ue": "5.0",
+   "nodes": 121,
+   "chars": 379292,
+   "sha256": "ba80d72738a88b9da6baa3fc9a602ff60e8e27d880abaea43c9150799e181467",
+   "read": "2026-10-28 14:34Z"
+  },
+  {
+   "name": "DistanceToFrank",
+   "url": "https://blueprintue.com/blueprint/cj7dxfjy/",
+   "title": "Distance To Frank",
+   "author": "hitted",
+   "ue": "5.0",
+   "nodes": 12,
+   "chars": 47363,
+   "sha256": "fe2a4e6be6e81fb1d1f9c8bd867cb52d95e99c487f60e16a1b6d1eb5c9af789d",
+   "read": "2026-10-28 14:34Z"
+  },
+  {
+   "name": "ToggleLockOn",
+   "url": "https://blueprintue.com/blueprint/bbhr3jku/",
+   "title": "Toggle Lock On",
+   "author": "hitted",
+   "ue": "5.0",
+   "nodes": 5,
+   "chars": 10714,
+   "sha256": "b2a8e116034af5b9ea9076a8e15ec2055169d094cc3e97837a6a50f4971f6ee0",
+   "read": "2026-10-28 14:34Z"
+  },
+  {
+   "name": "NewControlRotation",
+   "url": "https://blueprintue.com/blueprint/img2fl86/",
+   "title": "New Control Rotation",
+   "author": "hitted",
+   "ue": "5.0",
+   "nodes": 24,
+   "chars": 67223,
+   "sha256": "e134f02490de78ae7660ceec0b174558b9d1fc503ca8ec3a8ba40b0753e5662d",
+   "read": "2026-10-28 14:34Z"
+  }
+ ]
+}

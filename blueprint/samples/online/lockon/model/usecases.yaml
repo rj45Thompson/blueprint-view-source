@@ -1,0 +1,205 @@
+# The Lock-On System's use cases, read top down from the epic. Each step's `code:` cites the converted graph it realises
+# (tools/logic_map.py resolves every cite and writes the code spaces in generated.yaml): `Alias` a graph, `Alias#sN` a statement,
+# `Alias#sN:then|else|loop|skip` one outcome of a decision. An extension's cites are the outcome that takes that pathway.
+usecases:
+  - id: EPIC-LO
+    name: Fight while locked on to an enemy
+    level: kite
+    actor: P1
+    supporting: [SYS-FRANK, SYS-ENEMY, SYS-UE]
+    trigger: "enemies are near and the player wants Frank to face one of them while moving"
+    pre: "Frank has a LockOnSphere and a LockOnCone; enemies are Master_Enemy actors"
+    minimal: "Frank is never left crouched and turning with the controller with no way back"
+    success: "the player fights facing the enemy they chose, switches between enemies, and lets go"
+    why: "facing one enemy among several while moving is the point of a lock-on"
+    gulf:
+      exec: {text: "presses lock-on, presses cycle, moves", reqs: [LO-10, LO-30]}
+      eval: {text: "Frank turns to face the target; the target is told it is targeted", reqs: [LO-20, LO-9]}
+    steps:
+      - {do: "Frank keeps track of the enemies in range and in front", reqs: [LO-1, LO-5]}
+      - {do: "The player locks on to the closest enemy", reqs: [LO-10, LO-13]}
+      - {do: "Frank keeps facing the target while the player moves", reqs: [LO-20]}
+      - {do: "The player cycles to the next enemy in front", reqs: [LO-31]}
+      - {do: "The target dies or leaves, and the lock follows", reqs: [LO-3, LO-40]}
+      - {do: "The player releases the lock", reqs: [LO-41]}
+    ext:
+      - {at: 2, when: "no enemy is in range", do: ["the lock keeps the direction Frank faced, with no target"], out: rejoin 3, reqs: [LO-19]}
+      - {at: 5, when: "the target dies", do: ["nothing releases the lock: Frank keeps facing the dead enemy"], out: end minimal, reqs: [IR-LO-5]}
+
+  - id: UC-LO2
+    name: Track the enemies in lock range
+    level: fish
+    parent: {uc: EPIC-LO, step: 1}
+    actor: SYS-FRANK
+    trigger: "an actor enters or leaves the LockOnSphere"
+    pre: "the sphere's overlap events are bound"
+    minimal: "an actor that is not an enemy changes nothing"
+    success: "Out_Actors holds the enemies in range, each measuring its distance to Frank"
+    why: "a lock can only go to an enemy the Blueprint knows is near"
+    steps:
+      - {do: "An enemy enters the lock range and becomes a candidate", reqs: [LO-1], code: ["OnComponentBeginOverlap(LockOnSphere)", "OnComponentBeginOverlap(LockOnSphere)#s1:then"]}
+      - {do: "Its distance to Frank starts updating every 0.01 s, by a timer that names the function in a string", reqs: [LO-2, IR-LO-11, IR-LO-13], includes: [UC-LO8], code: ["OnComponentBeginOverlap(LockOnSphere)#s3"]}
+      - {do: "If a lock is on, the lock chooses again", reqs: [LO-3], code: ["OnComponentBeginOverlap(LockOnSphere)#s4:then"]}
+      - {do: "An enemy leaves the lock range: it stops being a candidate and stops measuring", reqs: [LO-4, LO-2], code: ["OnComponentEndOverlap(LockOnSphere)", "OnComponentEndOverlap(LockOnSphere)#s1:then"]}
+      - {do: "If it was the target of a lock, the lock chooses again", reqs: [LO-3], code: ["OnComponentEndOverlap(LockOnSphere)#s4:then", "OnComponentEndOverlap(LockOnSphere)#s5:then"]}
+    ext:
+      - {at: 1, when: "the actor is not a Master_Enemy", do: ["nothing happens"], out: end minimal, reqs: [LO-1], code: ["OnComponentBeginOverlap(LockOnSphere)#s1:else", "OnComponentEndOverlap(LockOnSphere)#s1:else"]}
+      - {at: 1, when: "the same enemy enters twice, two of its parts overlapping", do: ["it is listed twice"], out: rejoin 2, reqs: [IR-LO-3]}
+      - {at: 3, when: "no lock is on", do: ["nothing more happens"], out: end success, reqs: [LO-3], code: ["OnComponentBeginOverlap(LockOnSphere)#s4:else"]}
+      - {at: 3, when: "the lock chooses again", do: ["the old target is never told it stopped being the target"], out: rejoin 4, reqs: [IR-LO-15]}
+      - {at: 5, when: "no lock is on, or the enemy leaving is not the target", do: ["the lock stays as it is"], out: end success, reqs: [LO-3], code: ["OnComponentEndOverlap(LockOnSphere)#s4:else", "OnComponentEndOverlap(LockOnSphere)#s5:else"]}
+
+  - id: UC-LO8
+    name: Measure an enemy's distance to Frank
+    level: fish
+    parent: {uc: UC-LO2, step: 2}
+    actor: SYS-ENEMY
+    trigger: "the timer DistanceToFrank fires on an enemy in range (every 0.01 s)"
+    pre: "the enemy is in Out_Actors and its timer runs"
+    minimal: "a distance that cannot be measured is not taken as a real one"
+    success: "the enemy's Distance_to_Frank_Var holds its distance to Frank"
+    why: "the search compares these numbers to choose the target"
+    steps:
+      - {do: "The enemy traces a line from itself toward the player character", reqs: [LO-2, LO-7], code: ["DistanceToFrank", "DistanceToFrank#s1"]}
+      - {do: "The distance to the first hit becomes its distance to Frank", reqs: [LO-7], code: ["DistanceToFrank#s3", "DistanceToFrank#s2"]}
+      - {do: "It marks itself as targetable", reqs: [LO-6], code: ["DistanceToFrank#s4"]}
+    ext:
+      - {at: 2, when: "something else is hit first (another enemy, a wall)", do: ["the distance is to that thing"], out: rejoin 3, reqs: [IR-LO-6]}
+      - {at: 2, when: "the trace hits nothing", do: ["the distance reads 0, which wins every search"], out: rejoin 3, reqs: [IR-LO-7]}
+      - {at: 2, when: "the search reads the distance", do: ["it reads another variable, Distance to Frank Var, than the one measured here, DistanceToFrankVar"], out: rejoin 3, reqs: [IR-LO-17]}
+      - {at: 1, when: "the game is a shipped build", do: ["the trace still draws debug lines for 0.1 s on every call"], out: rejoin 2, reqs: [IR-LO-8]}
+
+  - id: UC-LO3
+    name: Track the enemies in front
+    level: fish
+    parent: {uc: EPIC-LO, step: 1}
+    actor: SYS-FRANK
+    trigger: "an actor enters or leaves the LockOnCone"
+    pre: "the cone's overlap events are bound"
+    minimal: "an actor that is not an enemy changes nothing"
+    success: "ConeActors holds the enemies in front of Frank"
+    why: "enemies in front are preferred, and cycling walks them"
+    steps:
+      - {do: "An enemy enters the cone and is added to the enemies in front", reqs: [LO-5], code: ["OnComponentBeginOverlap(LockOnCone)", "OnComponentBeginOverlap(LockOnCone)#s1:then"]}
+      - {do: "An enemy leaves the cone and is removed", reqs: [LO-5], code: ["OnComponentEndOverlap(LockOnCone)", "OnComponentEndOverlap(LockOnCone)#s1:then"]}
+    ext:
+      - {at: 1, when: "the actor is not a Master_Enemy", do: ["nothing happens"], out: end minimal, reqs: [LO-5], code: ["OnComponentBeginOverlap(LockOnCone)#s1:else", "OnComponentEndOverlap(LockOnCone)#s1:else"]}
+      - {at: 1, when: "the same enemy enters twice", do: ["it is listed twice"], out: rejoin 2, reqs: [IR-LO-3]}
+
+  - id: UC-LO1
+    name: Lock on to the closest enemy
+    level: sea
+    parent: {uc: EPIC-LO, step: 2}
+    actor: P1
+    supporting: [SYS-FRANK, SYS-ENEMY]
+    trigger: "the player presses lock-on while no lock is on (the input that fires LockON is not in the pastes)"
+    pre: "LockedOn is false"
+    minimal: "no lock is set on an enemy that is too far or dead"
+    success: "Frank is locked on to the closest enemy, crouched and turning with the controller, and the enemy is told"
+    why: "one press should pick the obvious enemy"
+    gulf:
+      exec: {text: "presses lock-on", reqs: [LO-10]}
+      eval: {text: "Frank crouches and turns to the target; the target is told", reqs: [LO-16, LO-9]}
+    steps:
+      - {do: "The player asks for a lock while none is on", reqs: [LO-10], code: ["LockON", "LockON#s1:else"]}
+      - {do: "The search starts: only enemies closer than 4000 units can win it", reqs: [LO-11, IR-LO-12], code: ["LockON#s9", "LockON#s10:else"]}
+      - {do: "Enemies in front are the candidates; with none in front, every enemy in range is", reqs: [LO-12], code: ["LockON#s14:then", "LockON#s14:else"]}
+      - {do: "Each candidate closer than the closest so far becomes the target (LockOnDone, fired like a function), by the distance the search reads", reqs: [LO-13, IR-LO-4, IR-LO-17], code: ["LockON#s15:loop", "LockON#s25:loop", "LockON#s18:then", "LockON#s28:then", "LockOnDone"]}
+      - {do: "After the search the lock is set if the target is not dead", reqs: [LO-14, IR-LO-18], code: ["LockON#s21:then", "LockON#s31:then", "LockON#s22:then", "LockON#s32:then"]}
+      - {do: "The lock is set only when the closest distance is at most MaxDistance", reqs: [LO-15, IR-LO-12], code: ["SetLockOnTarget", "SetLockOnTarget#s1:then", "SetLockOnTarget#s1:else", "SetLockOnTarget#s9:else"]}
+      - {do: "Frank crouches, turns with the controller, and the facing update starts every 0.01 s", reqs: [LO-16, LO-17, LO-18, IR-LO-11, IR-LO-13], code: ["SetLockOnTarget#s2", "SetLockOnTarget#s3", "SetLockOnTarget#s4", "SetLockOnTarget#s5", "SetLockOnTarget#s6", "SetLockOnTarget#s10", "SetLockOnTarget#s11", "SetLockOnTarget#s12", "SetLockOnTarget#s13", "SetLockOnTarget#s14"]}
+      - {do: "The target is told it is the target", reqs: [LO-9], code: ["SetLockOnTarget#s7:then", "SetLockOnTarget#s15:then"]}
+    ext:
+      - {at: 2, when: "no enemy is in range", do: ["Frank keeps the direction he faces as the lock direction, with no target; the lock is set as usual"], out: rejoin 6, reqs: [LO-19], code: ["LockON#s10:then"]}
+      - {at: 4, when: "a candidate is exactly as close as the closest so far, or farther", do: ["it is passed over: the first one found stays"], out: rejoin 5, reqs: [LO-13], code: ["LockON#s18:else", "LockON#s28:else", "LockON#s20:then", "LockON#s20:else", "LockON#s30:then", "LockON#s30:else"]}
+      - {at: 4, when: "no candidate is closer than 4000", do: ["the target stays whatever an earlier event left (None after an empty search)", "whether it is dead is read anyway"], out: rejoin 5, reqs: [IR-LO-1]}
+      - {at: 5, when: "NoFalse is false", do: ["nothing happens"], out: end minimal, reqs: [IR-LO-2], code: ["LockON#s21:else", "LockON#s31:else"]}
+      - {at: 5, when: "the target is dead", do: ["no lock is set, and the player is not told"], out: end minimal, reqs: [LO-14, IR-LO-16], code: ["LockON#s22:else", "LockON#s32:else"]}
+      - {at: 6, when: "the closest distance is more than MaxDistance", do: ["no lock is set, and the player is not told"], out: end minimal, reqs: [LO-15, IR-LO-16], code: ["SetLockOnTarget#s9:then"]}
+      - {at: 8, when: "there is no valid target (an empty search)", do: ["nobody is told"], out: end success, reqs: [LO-19], code: ["SetLockOnTarget#s7:else", "SetLockOnTarget#s15:else"]}
+      - {at: 8, when: "the target receives the message", do: ["what it does with it is not in the pastes"], out: end success, reqs: [IR-LO-9]}
+
+  - id: UC-LO4
+    name: Keep facing the target
+    level: sea
+    parent: {uc: EPIC-LO, step: 3}
+    actor: P1
+    supporting: [SYS-FRANK]
+    trigger: "the player moves while a lock is on (the facing timer fires every 0.01 s)"
+    pre: "LockedOn is true and ToggleLockOn's timer runs"
+    minimal: "the view never turns somewhere neither the target nor the locked direction"
+    success: "the controller faces the target, smoothly"
+    why: "moving while facing the enemy is what the lock is for"
+    gulf:
+      exec: {text: "moves Frank", reqs: [LO-20]}
+      eval: {text: "Frank's view turns to the target", reqs: [LO-20]}
+    steps:
+      - {do: "Every 0.01 s the facing update runs", reqs: [LO-18, IR-LO-13], code: ["ToggleLockOn"]}
+      - {do: "It asks for the rotation toward the target", reqs: [LO-20], code: ["ToggleLockOn#s1", "NewControlRotation"]}
+      - {do: "With a valid target, the rotation turns smoothly toward it, keeping its roll, and the aim point is the target", reqs: [LO-20, LO-21], code: ["NewControlRotation#s1:then"]}
+      - {do: "The controller takes the rotation", reqs: [LO-20], code: ["ToggleLockOn#s2"]}
+    ext:
+      - {at: 3, when: "there is no valid target", do: ["the rotation stays the one Frank had when he locked; the aim point is one unit ahead"], out: rejoin 4, reqs: [LO-19, LO-21], code: ["NewControlRotation#s1:else"]}
+      - {at: 2, when: "the two pasted copies disagree on the rotation's outputs", do: ["the call expects a second output, Character, that the function does not declare"], out: rejoin 3, reqs: [IR-LO-10]}
+      - {at: 3, when: "the smoothing runs", do: ["it assumes 0.1 s between updates while they come every 0.01 s, so Frank turns about ten times faster than its numbers say"], out: rejoin 4, reqs: [IR-LO-14]}
+
+  - id: UC-LO5
+    name: Cycle to the next enemy in front
+    level: sea
+    parent: {uc: EPIC-LO, step: 4}
+    actor: P1
+    supporting: [SYS-FRANK]
+    trigger: "the player asks to cycle (ConeCycle; its input is not in the pastes)"
+    pre: "a lock is on"
+    minimal: "a cycle that cannot happen changes nothing"
+    success: "the next enemy in front is the target, and both enemies were told"
+    why: "with several enemies in front the player needs to choose"
+    gulf:
+      exec: {text: "presses cycle", reqs: [LO-30]}
+      eval: {text: "Frank turns to the next enemy; each enemy is told", reqs: [LO-31, LO-9]}
+    steps:
+      - {do: "The player asks to cycle while locked", reqs: [LO-30], code: ["ConeCycle", "ConeCycle#s1:then"]}
+      - {do: "With a valid target and enemies in front, the cycle goes ahead", reqs: [LO-30], code: ["ConeCycle#s2:then", "ConeCycle#s3:else"]}
+      - {do: "The old target is told it stopped; the next enemy in front becomes the target and is told; after the last comes the first", reqs: [LO-31, LO-9], code: ["ConeCycle#s4:then", "ConeCycle#s4:else"]}
+    ext:
+      - {at: 1, when: "no lock is on", do: ["nothing happens"], out: end minimal, reqs: [LO-30], code: ["ConeCycle#s1:else"]}
+      - {at: 2, when: "the target is not valid, or no enemy is in front", do: ["nothing happens"], out: end minimal, reqs: [LO-30], code: ["ConeCycle#s2:else", "ConeCycle#s3:then"]}
+      - {at: 3, when: "the target is not among the enemies in front", do: ["the first enemy in front becomes the target"], out: end success, reqs: [LO-32]}
+
+  - id: UC-LO6
+    name: Forget a dead enemy
+    level: fish
+    parent: {uc: EPIC-LO, step: 5}
+    actor: SYS-ENEMY
+    trigger: "an enemy dies and reports it (EnemyDeath; who fires it is not in the pastes)"
+    pre: "the enemy may be in Out_Actors, in ConeActors, or the target"
+    minimal: "a dead enemy is never chosen by a later search"
+    success: "the dead enemy is no longer a candidate anywhere"
+    why: "a search must not pick a corpse"
+    steps:
+      - {do: "An enemy reports its death to Frank", reqs: [LO-40], code: ["EnemyDeath"]}
+      - {do: "It is no longer a candidate, in range or in front", reqs: [LO-40], code: ["EnemyDeath#s1", "EnemyDeath#s2"]}
+    ext:
+      - {at: 2, when: "the dead enemy is the target", do: ["nothing releases or moves the lock; the facing update keeps running"], out: end minimal, reqs: [IR-LO-5]}
+
+  - id: UC-LO7
+    name: Release the lock
+    level: sea
+    parent: {uc: EPIC-LO, step: 6}
+    actor: P1
+    supporting: [SYS-FRANK]
+    trigger: "the player presses lock-on while a lock is on"
+    pre: "LockedOn is true"
+    minimal: "Frank is never left crouched or turning with the controller"
+    success: "no lock is on; Frank stands and turns with his movement; the target was told"
+    why: "the player must be able to let go"
+    gulf:
+      exec: {text: "presses lock-on again", reqs: [LO-41]}
+      eval: {text: "Frank stands up and turns with his movement", reqs: [LO-41]}
+    steps:
+      - {do: "The player asks again while locked", reqs: [LO-10, LO-41], code: ["LockON#s1:then"]}
+      - {do: "Frank stands and turns with his movement again", reqs: [LO-16, LO-17, LO-41], code: ["LockON#s2", "LockON#s3", "LockON#s4", "LockON#s5"]}
+      - {do: "The facing update stops", reqs: [LO-18], code: ["LockON#s6"]}
+      - {do: "The target is told it stopped being the target", reqs: [LO-9, LO-41], code: ["LockON#s7:then"]}
+    ext:
+      - {at: 4, when: "there is no valid target", do: ["nobody is told"], out: end success, reqs: [LO-41], code: ["LockON#s7:else"]}

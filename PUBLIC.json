@@ -1,0 +1,8 @@
+{
+ "made_by": "blueprint/tools/public_repo.py",
+ "files": 94,
+ "never": {
+  "view/round_view.js": "drives the rounds over the reference game's code",
+  "view/tasks_cli.js": "the task bank, written against the reference game's classes"
+ }
+}

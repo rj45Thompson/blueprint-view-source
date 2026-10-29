@@ -1,0 +1,256 @@
+# The asteroid shooter's use cases, read top down from the epic. Each step's `code:` cites the converted graph it realises
+# (tools/logic_map.py resolves every cite and writes the code spaces in generated.yaml): `Alias` a graph (its top statements),
+# `Alias#sN` a statement, `Alias#sN:then|else|kNN` one outcome of a decision (its body). An extension's cites are the outcome that
+# takes that pathway. The asteroid's BeginPlay is BP_Meteor's: the class was renamed (IR-AS-1 holds the evidence).
+usecases:
+  - id: EPIC-AS
+    name: Play a game of the asteroid shooter
+    level: kite
+    actor: P1
+    supporting: [SYS-TITLE, SYS-CHAR, SYS-CTRL, SYS-SPAWN, SYS-ROCK, SYS-SHIP, SYS-BULLET, SYS-SHOT, SYS-UE]
+    trigger: "the game opens on the title screen"
+    pre: "the title level and Level1 exist, with the ship's Blueprint as the player character and BP_Controller as its controller (the game mode is not in the pastes)"
+    minimal: "a game that ends returns to the title, where firing starts another"
+    success: "the player turns and fires until the last life is lost, scoring for every ship and asteroid shot"
+    why: "surviving the things that come out of the middle, and scoring while doing it, is the whole game"
+    gulf:
+      exec: {text: "turns the ship with one axis and fires with one button", reqs: [AS-3, AS-2]}
+      eval: {text: "sees a target explode or a score go up, or the ship blow up and an icon go", reqs: [AS-14, AS-24, AS-19, AS-20]}
+    steps:
+      - {do: "The title screen shows, and the player fires to start", reqs: [AS-1, AS-2]}
+      - {do: "The player turns the ship around the middle", reqs: [AS-3, IR-AS-11]}
+      - {do: "The player fires: a shot flies from the ship into the middle", reqs: [AS-2, AS-4]}
+      - {do: "Asteroids and enemy ships come out of the middle", reqs: [AS-5, AS-6, AS-7, IR-AS-9]}
+      - {do: "An asteroid flies at the ship, growing as it leaves the middle; an enemy ship flies its path and may fire at the ship", reqs: [AS-8, AS-9, AS-12, AS-13]}
+      - {do: "A shot ship explodes and scores; a shot asteroid scores", reqs: [AS-11, AS-14, AS-24]}
+      - {do: "An asteroid or a bullet that reaches the ship costs a life, and the ship flashes back in", reqs: [AS-10, AS-17, AS-18, AS-19, AS-20, AS-21]}
+      - {do: "With no life left the title screen comes back", reqs: [AS-22]}
+    ext:
+      - {at: 7, when: "the ship is hit again while it flashes back in", do: ["nothing is lost"], out: rejoin 7, reqs: [AS-18]}
+      - {at: 6, when: "the target is an asteroid", do: ["it scores, absorbs the shot and flies on, still able to reach the ship"], out: rejoin 7, reqs: [IR-AS-10]}
+      - {at: 4, when: "a wave of ships is due", do: ["what starts the 0.5 s timer that runs CustomEvent_1 is not in the copy"], out: rejoin 5, reqs: [IR-AS-9]}
+
+  - id: UC-AS1
+    name: Start a game from the title screen
+    level: sea
+    parent: {uc: EPIC-AS, step: 1}
+    actor: P1
+    supporting: [SYS-TITLE, SYS-CHAR]
+    trigger: "the title level begins (its level Blueprint's BeginPlay)"
+    pre: "the title level holds CameraActor_1"
+    minimal: "the title shows through its own camera"
+    success: "the player fires and Level1 opens"
+    why: "a game starts from the title, and comes back to it"
+    gulf:
+      exec: {text: "presses Shoot on the title screen", reqs: [AS-2]}
+      eval: {text: "sees the title through its camera, then the game open", reqs: [AS-1, AS-2]}
+    steps:
+      - {do: "The title level begins and marks the ship as on the title screen", reqs: [AS-1], code: ["ReceiveBeginPlay(TitleScreen)", "ReceiveBeginPlay(TitleScreen)#s1:then"]}
+      - {do: "The view blends to the title's camera at once", reqs: [AS-1], code: ["ReceiveBeginPlay(TitleScreen)#s3"]}
+      - {do: "A frame later the controller's UI is removed", reqs: [AS-1, IR-AS-14], code: ["ReceiveBeginPlay(TitleScreen)#s4", "ReceiveBeginPlay(TitleScreen)#s5:then"]}
+      - {do: "The player presses Shoot while on the title screen, and Level1 opens", reqs: [AS-2], code: ["InputActionShoot", "InputActionShoot#s1:then"]}
+    ext:
+      - {at: 1, when: "the player character is not a BP_Character", do: ["nothing is marked, the camera stays and Shoot fires a shot instead of starting"], out: end minimal, reqs: [IR-AS-12], code: ["ReceiveBeginPlay(TitleScreen)#s1:else"]}
+      - {at: 3, when: "the controller is not a BP_Controller", do: ["the UI stays on the title screen"], out: rejoin 4, reqs: [IR-AS-12], code: ["ReceiveBeginPlay(TitleScreen)#s5:else"]}
+
+  - id: UC-AS2
+    name: Turn the ship around the middle
+    level: sea
+    parent: {uc: EPIC-AS, step: 2}
+    actor: P1
+    supporting: [SYS-CTRL, SYS-CHAR]
+    trigger: "the player pushes the Move Right / Left axis"
+    pre: "Move Right / Left is bound to an input in the project's settings, and the ship turns with its controller (neither is in the pastes)"
+    minimal: "with the axis at rest the ship stays where it is"
+    success: "the ship moves around the ring, faster the further the axis is pushed"
+    why: "the ship meets what comes out of the middle by moving around it"
+    gulf:
+      exec: {text: "pushes the axis left or right, a little or all the way", reqs: [AS-3]}
+      eval: {text: "sees the ship slide around the ring", reqs: [AS-3, IR-AS-11]}
+    steps:
+      - {do: "The player pushes the Move Right / Left axis", reqs: [AS-3], code: ["InputAxisMoveRight/Left"]}
+      - {do: "The control rotation's yaw becomes the ship's yaw plus the push times RotationSpeed", reqs: [AS-3, IR-AS-2], code: ["InputAxisMoveRight/Left#s1"]}
+      - {do: "The ship turns with its controller, and its sprite and muzzle swing around the ring with it, so the next shot leaves from the new place", reqs: [IR-AS-11]}
+    ext:
+      - {at: 2, when: "the axis is at rest", do: ["the yaw is kept: the ship stays where it is"], out: end minimal, reqs: [AS-3]}
+      - {at: 3, when: "the ship is not set to turn with its controller", do: ["the control rotation turns and the ship does not"], out: end minimal, reqs: [IR-AS-11]}
+
+  - id: UC-AS3
+    name: Fire a shot into the middle
+    level: sea
+    parent: {uc: EPIC-AS, step: 3}
+    actor: P1
+    supporting: [SYS-CHAR, SYS-SHOT]
+    trigger: "the player presses Shoot during play"
+    pre: "Shoot is bound to an input in the project's settings (not in the pastes)"
+    minimal: "a shot is spawned at the ship's muzzle"
+    success: "the shot flies from the ship to the middle and is gone when it gets there"
+    why: "a shot is how the player clears what comes at them"
+    gulf:
+      exec: {text: "presses Shoot", reqs: [AS-2]}
+      eval: {text: "sees the shot fly from the ship into the middle", reqs: [AS-4]}
+    steps:
+      - {do: "The player presses Shoot during play: a shot is spawned at the ship's muzzle (ProjectileSpawn)", reqs: [AS-2], code: ["InputActionShoot#s1:else"]}
+      - {do: "The shot's Timeline plays", reqs: [AS-4, IR-AS-13], code: ["ReceiveBeginPlay(BP_Projectile)"]}
+      - {do: "Each update moves it from where it spawned toward the middle, as far as the Timeline's track says", reqs: [AS-4, IR-AS-13], code: ["ReceiveBeginPlay(BP_Projectile)#s3", "ReceiveBeginPlay(BP_Projectile)#s4"]}
+      - {do: "When the Timeline finishes the shot is destroyed", reqs: [AS-4], code: ["ReceiveBeginPlay(BP_Projectile)#s6", "ReceiveBeginPlay(BP_Projectile)#s7"]}
+    ext:
+      - {at: 1, when: "the ship is on the title screen", do: ["Level1 opens instead (UC-AS1)"], out: end minimal, reqs: [AS-2], code: ["InputActionShoot#s1:then"]}
+
+  - id: UC-AS4
+    name: Send asteroids and ships out of the middle
+    level: fish
+    parent: {uc: EPIC-AS, step: 4}
+    actor: SYS-SPAWN
+    trigger: "play begins for the spawner (BP_EnemyLogic's BeginPlay)"
+    pre: "Level1 holds one BP_EnemyLogic (the level is not in the pastes)"
+    minimal: "the asteroid timer runs"
+    success: "an asteroid comes out of the middle now and then, and ships whenever CustomEvent_1 runs"
+    why: "the game is what comes out of the middle"
+    steps:
+      - {do: "Play begins for the spawner: a looping timer runs CustomEvent_0 every 2 seconds", reqs: [AS-5, IR-AS-8], code: ["ReceiveBeginPlay(BP_EnemyLogic)", "ReceiveBeginPlay(BP_EnemyLogic)#s1"]}
+      - {do: "Each run, one time in ten, an asteroid is spawned at the middle", reqs: [AS-6], code: ["CustomEvent_0", "CustomEvent_0#s1:then"]}
+      - {do: "Each run of CustomEvent_1 spawns an enemy ship at the middle, at 0.3 of its size", reqs: [AS-7, IR-AS-9], code: ["CustomEvent_1", "CustomEvent_1#s1"]}
+    ext:
+      - {at: 2, when: "the roll is not 10", do: ["nothing is spawned this time"], out: rejoin 3, reqs: [AS-6], code: ["CustomEvent_0#s1:else"]}
+      - {at: 3, when: "a wave of ships is due", do: ["the paste's looping 0.5 s timer bound to CustomEvent_1 is wired from a node the copy does not hold"], out: end minimal, reqs: [IR-AS-9]}
+
+  - id: UC-AS5
+    name: Fly an asteroid at the ship
+    level: fish
+    parent: {uc: EPIC-AS, step: 5}
+    actor: SYS-ROCK
+    trigger: "play begins for an asteroid"
+    pre: "an asteroid was spawned at the middle"
+    minimal: "the asteroid moves along whatever aim it has"
+    success: "the asteroid heads at the ship, 20 degrees off to one side, growing as it leaves the middle"
+    why: "an asteroid is the threat the player has to turn away from"
+    steps:
+      - {do: "Play begins for the asteroid (the graph of BP_Meteor, its earlier name)", reqs: [AS-8, IR-AS-1], code: ["ReceiveBeginPlay(BP_Meteor)"]}
+      - {do: "It aims at the player's sprite, turned 20 degrees left or right at random", reqs: [AS-8], code: ["ReceiveBeginPlay(BP_Meteor)#s1:then"]}
+      - {do: "Every frame it moves along its aim by its Speed", reqs: [AS-9, IR-AS-2], code: ["ReceiveTick(BP_Asteorid)", "ReceiveTick(BP_Asteorid)#s1"]}
+      - {do: "It grows from half its size at the middle to 1.5 at 150 units out", reqs: [AS-9, IR-AS-7], code: ["ReceiveTick(BP_Asteorid)#s2"]}
+    ext:
+      - {at: 2, when: "the player character is not a BP_Character", do: ["the asteroid keeps its default aim"], out: end minimal, reqs: [IR-AS-12], code: ["ReceiveBeginPlay(BP_Meteor)#s1:else"]}
+      - {at: 3, when: "the copy is the earlier BP_Meteor", do: ["it moves the same way and never grows: BP_Asteorid's Tick supersedes it"], out: end success, reqs: [IR-AS-1, IR-AS-2], code: ["ReceiveTick(BP_Meteor)", "ReceiveTick(BP_Meteor)#s1"]}
+
+  - id: UC-AS6
+    name: Fly an enemy ship along its path
+    level: fish
+    parent: {uc: EPIC-AS, step: 5}
+    actor: SYS-SHIP
+    trigger: "a frame ticks for an enemy ship"
+    pre: "the ship's Spline holds its path (built in its own Blueprint, not in the pastes)"
+    minimal: "a ship past the end of its path is gone"
+    success: "the ship flies its path at 100 units a second, facing along it, growing as it leaves the middle, and is gone at its end"
+    why: "a ship crosses the player's line of fire for a while, then leaves"
+    steps:
+      - {do: "A frame ticks for the ship: its Speed is set to 100", reqs: [AS-12, IR-AS-6], code: ["ReceiveTick(BP_EnemyShip)", "ReceiveTick(BP_EnemyShip)#s1"]}
+      - {do: "It goes Speed x the frame's time further along its Spline, placed and turned as the path is there", reqs: [AS-12, IR-AS-5], code: ["ReceiveTick(BP_EnemyShip)#s2", "ReceiveTick(BP_EnemyShip)#s3"]}
+      - {do: "It grows from 0.1 at the middle to 0.3 from 40 units out", reqs: [AS-12, IR-AS-7], code: ["ReceiveTick(BP_EnemyShip)#s4"]}
+      - {do: "Past the end of its path it is destroyed", reqs: [AS-12], code: ["ReceiveTick(BP_EnemyShip)#s5:then"]}
+    ext:
+      - {at: 4, when: "the path is not finished", do: ["it flies on"], out: end success, reqs: [AS-12], code: ["ReceiveTick(BP_EnemyShip)#s5:else"]}
+
+  - id: UC-AS7
+    name: Fire a bullet at the ship
+    level: fish
+    parent: {uc: EPIC-AS, step: 5}
+    actor: SYS-SHIP
+    supporting: [SYS-BULLET]
+    trigger: "play begins for an enemy ship"
+    pre: "an enemy ship was spawned"
+    minimal: "a ship that does not fire leaves no bullet"
+    success: "one ship in three fires one bullet, which flies straight at where the ship was aimed"
+    why: "the ships fight back"
+    steps:
+      - {do: "Play begins for the ship, and it waits DelayUntilShooting", reqs: [AS-13, IR-AS-3], code: ["ReceiveBeginPlay(BP_EnemyShip)", "ReceiveBeginPlay(BP_EnemyShip)#s1"]}
+      - {do: "One time in three it spawns a bullet where it is", reqs: [AS-13], code: ["ReceiveBeginPlay(BP_EnemyShip)#s2:then"]}
+      - {do: "The bullet aims at the player's sprite", reqs: [AS-15], code: ["ReceiveBeginPlay(BP_EnemyProjectile)", "ReceiveBeginPlay(BP_EnemyProjectile)#s1:then"]}
+      - {do: "Every frame it moves along its aim by its Speed", reqs: [AS-16, IR-AS-2], code: ["ReceiveTick(BP_EnemyProjectile)", "ReceiveTick(BP_EnemyProjectile)#s1"]}
+    ext:
+      - {at: 2, when: "the roll is not 3", do: ["this ship never fires"], out: end minimal, reqs: [AS-13], code: ["ReceiveBeginPlay(BP_EnemyShip)#s2:else"]}
+      - {at: 3, when: "the player character is not a BP_Character", do: ["the bullet keeps its default aim"], out: end minimal, reqs: [IR-AS-12], code: ["ReceiveBeginPlay(BP_EnemyProjectile)#s1:else"]}
+
+  - id: UC-AS8
+    name: Shoot a ship or an asteroid
+    level: sea
+    parent: {uc: EPIC-AS, step: 6}
+    actor: P1
+    supporting: [SYS-SHOT, SYS-SHIP, SYS-ROCK, SYS-CTRL]
+    trigger: "a shot begins to overlap an enemy ship's hitbox or an asteroid"
+    pre: "shots, ships and asteroids overlap rather than block (their collision settings are not in the pastes)"
+    minimal: "a shot that touches anything else flies on"
+    success: "a shot ship is gone in an explosion and its worth is scored; a shot asteroid scores 100"
+    why: "scoring is what the player plays for"
+    gulf:
+      exec: {text: "fires as a ship or an asteroid crosses the shot's way in", reqs: [AS-2, AS-4]}
+      eval: {text: "sees the ship explode and the score go up, or the asteroid swallow the shot for 100", reqs: [AS-14, AS-11, AS-24]}
+    steps:
+      - {do: "The player fires as a ship or an asteroid crosses the shot's way into the middle (UC-AS3)", reqs: [AS-2, AS-4]}
+      - {do: "A shot touches an enemy ship's hitbox", reqs: [AS-14], code: ["OnComponentBeginOverlap(HitboxEnemy)"]}
+      - {do: "The shot and the ship are destroyed, the ship's worth is scored, and an explosion is left where it was", reqs: [AS-14, AS-24, IR-AS-4], code: ["OnComponentBeginOverlap(HitboxEnemy)#s1:then"]}
+      - {do: "A shot that touches an asteroid scores 100 and is destroyed", reqs: [AS-11, AS-24, IR-AS-4], code: ["OnComponentBeginOverlap(Sphere)(BP_Asteorid)", "OnComponentBeginOverlap(Sphere)(BP_Asteorid)#s1:else", "OnComponentBeginOverlap(Sphere)(BP_Asteorid)#s3:then"]}
+    ext:
+      - {at: 3, when: "what touched the ship is not a shot", do: ["nothing happens: an asteroid or a bullet passes through it"], out: rejoin 4, reqs: [AS-14], code: ["OnComponentBeginOverlap(HitboxEnemy)#s1:else"]}
+      - {at: 4, when: "the asteroid was shot", do: ["the asteroid itself flies on, still aimed at the ship"], out: end success, reqs: [IR-AS-10]}
+      - {at: 4, when: "what touched the asteroid is neither the ship nor a shot", do: ["nothing happens"], out: end success, reqs: [AS-11], code: ["OnComponentBeginOverlap(Sphere)(BP_Asteorid)#s3:else"]}
+
+  - id: UC-AS9
+    name: Take a hit
+    level: fish
+    parent: {uc: EPIC-AS, step: 7}
+    actor: SYS-CHAR
+    supporting: [SYS-ROCK, SYS-BULLET, SYS-CTRL]
+    trigger: "an asteroid or an enemy bullet begins to overlap the ship"
+    pre: "the ship starts with three lives to lose (IR-AS-15)"
+    minimal: "a hit while the ship flashes back in costs nothing"
+    success: "a life is gone, its icon hidden, and the ship is back after flashing in"
+    why: "losing lives is what ends a game"
+    steps:
+      - {do: "An asteroid touches the ship, or a bullet does and is destroyed", reqs: [AS-10, AS-17], code: ["OnComponentBeginOverlap(Sphere)(BP_Asteorid)#s1:then", "OnComponentBeginOverlap(Sphere)(BP_EnemyProjectile)", "OnComponentBeginOverlap(Sphere)(BP_EnemyProjectile)#s1:then"]}
+      - {do: "ReduceLives runs; the first time, its DoOnce starts open (Start Closed is false)", reqs: [AS-18], code: ["ReduceLives", "ReduceLives#s1:then", "ReduceLives#s3:else"]}
+      - {do: "The DoOnce closes, so further hits cost nothing for now, and a life is taken", reqs: [AS-18], code: ["ReduceLives#s5:then"]}
+      - {do: "A life icon is hidden: Life1 with 2 lives left, Life2 with 1, Life3 with none", reqs: [AS-19, IR-AS-15], code: ["ReduceLives#s8:then", "ReduceLives#s9:k12", "ReduceLives#s9:k15", "ReduceLives#s9:k18"]}
+      - {do: "The ship explodes, vanishes and is turned back to where it started; 0.2 s pass", reqs: [AS-20, IR-AS-3], code: ["ReduceLives#s21", "ReduceLives#s22", "ReduceLives#s23", "ReduceLives#s24"]}
+      - {do: "With a life left the ship flashes back in, FlashInterval apart, and the DoOnce opens again", reqs: [AS-21, IR-AS-3], code: ["ReduceLives#s25:then"]}
+    ext:
+      - {at: 1, when: "the asteroid touched the ship", do: ["the asteroid flies on through it"], out: rejoin 2, reqs: [IR-AS-10]}
+      - {at: 1, when: "a bullet touches anything but the ship", do: ["nothing happens: it flies on"], out: end success, reqs: [AS-17], code: ["OnComponentBeginOverlap(Sphere)(BP_EnemyProjectile)#s1:else"]}
+      - {at: 2, when: "ReduceLives has run before", do: ["the DoOnce's setup is skipped"], out: rejoin 3, reqs: [AS-18], code: ["ReduceLives#s1:else"]}
+      - {at: 3, when: "the ship is still flashing back in from the last hit", do: ["nothing is lost"], out: end minimal, reqs: [AS-18], code: ["ReduceLives#s5:else"]}
+      - {at: 4, when: "no life is left (Lives is -1)", do: ["no icon is hidden"], out: rejoin 5, reqs: [AS-19, AS-22], code: ["ReduceLives#s9:k10"]}
+      - {at: 4, when: "the controller is not a BP_Controller", do: ["no icon is hidden"], out: rejoin 5, reqs: [IR-AS-12], code: ["ReduceLives#s8:else"]}
+      - {at: 6, when: "no life is left", do: ["the title screen opens, and the DoOnce stays closed"], out: end success, reqs: [AS-22], code: ["ReduceLives#s25:else"]}
+
+  - id: UC-AS11
+    name: End the game and go back to the title
+    level: fish
+    parent: {uc: EPIC-AS, step: 8}
+    actor: SYS-CHAR
+    supporting: [SYS-TITLE]
+    trigger: "a hit takes the last life (Lives becomes -1)"
+    pre: "the ship has no life left to lose"
+    minimal: "the game stops costing lives"
+    success: "the title screen is back, and firing there starts the next game"
+    why: "a game that ends must be able to start again"
+    steps:
+      - {do: "The last life is lost: no icon is left to hide, and after the explosion the title level opens", reqs: [AS-22, AS-19], code: ["ReduceLives#s9:k10", "ReduceLives#s25:else"]}
+      - {do: "ReduceLives is left shut: nothing more costs a life", reqs: [AS-22, AS-18]}
+      - {do: "The title level begins, and firing there starts the next game (UC-AS1)", reqs: [AS-1, AS-2], code: ["ReceiveBeginPlay(TitleScreen)"]}
+    ext:
+      - {at: 3, when: "the player character is not a BP_Character", do: ["the title marks nothing, and Shoot fires a shot instead of starting a game"], out: end minimal, reqs: [IR-AS-12], code: ["ReceiveBeginPlay(TitleScreen)#s1:else"]}
+
+  - id: UC-AS10
+    name: Keep the score
+    level: fish
+    parent: {uc: EPIC-AS, step: 6}
+    actor: SYS-CTRL
+    trigger: "play begins for the controller; then each AddScore"
+    pre: "the controller is a BP_Controller"
+    minimal: "the score widget is on the screen"
+    success: "the widget shows the running total after every hit that scores"
+    why: "the score is what the player plays for"
+    steps:
+      - {do: "Play begins for the controller: the score widget is created, put on the screen and kept", reqs: [AS-23, IR-AS-14], code: ["ReceiveBeginPlay(BP_Controller)", "ReceiveBeginPlay(BP_Controller)#s1", "ReceiveBeginPlay(BP_Controller)#s2", "ReceiveBeginPlay(BP_Controller)#s3"]}
+      - {do: "AddScore adds to Score and shows the total as text", reqs: [AS-24, IR-AS-14], code: ["AddScore", "AddScore#s1", "AddScore#s2"]}

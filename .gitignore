@@ -1,0 +1,14 @@
+# what a build writes, and a paste's text (its author's; fetched by URL)
+*.t3d
+blueprint/samples/online/*/graphs/
+blueprint/samples/online/*/trace/
+blueprint/samples/online/*/CLASSES*.md
+blueprint/samples/online/*/TRACE.md
+blueprint/view/data/
+blueprint/results/
+blueprint/runs/
+bin/
+obj/
+__pycache__/
+*.pyc
+*.unitypackage

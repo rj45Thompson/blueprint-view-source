@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blueprint View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Blueprint View - the reader's page (PLAN.md phase 3; the Unity package writes a copy with its graphs inside it). The chrome follows the reader's light or dark setting;
+   the Blueprint canvas is always the editor's dark grid, because that is the picture a Blueprint reader knows. */
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --line: #d9dce3; --fg: #1d2129; --muted: #5c6370; --accent: #2f6fd6; --accent-fg: #ffffff;
+  --hover: #eef1f6; --code-bg: #fbfbfc; --kw: #8a3fd1; --str: #a8541c; --num: #1a7f6e; --cmt: #6f7682;
+  --canvas: #1a1c21; --grid: #262931; --node: rgba(24, 26, 31, 0.94); --node-line: #3a3f4a; --node-fg: #e6e8ec; --node-muted: #9aa1ad;
+  --sel: #ffc94d;
+  --c-flow: #5e6470; --c-call: #2f63c0; --c-pure: #2e7d45; --c-set: #217f80; --c-math: #4e6650; --c-make: #5a4aa6; --c-cast: #22809f;
+  --c-lambda: #a06a22; --c-fail: #a33838; --c-other: #6b5f4a;
+  --t-bool: #c23b3b; --t-int: #2fd3a6; --t-float: #a3e86b; --t-string: #e45fd2; --t-array: #f0b84a; --t-object: #4f8fe8; --t-any: #9aa1ad;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121418; --panel: #191c21; --line: #2b2f37; --fg: #e3e6eb; --muted: #9aa1ad; --accent: #6aa0ff; --accent-fg: #0d1220;
+  --hover: #22262d; --code-bg: #15181c; --kw: #c79bff; --str: #f0a46b; --num: #5fd4bd; --cmt: #7d8592; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121418; --panel: #191c21; --line: #2b2f37; --fg: #e3e6eb; --muted: #9aa1ad; --accent: #6aa0ff; --accent-fg: #0d1220;
+  --hover: #22262d; --code-bg: #15181c; --kw: #c79bff; --str: #f0a46b; --num: #5fd4bd; --cmt: #7d8592; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 "IBM Plex Sans", system-ui, sans-serif; display: grid;
+  grid-template-rows: auto 1fr; padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+button { font: inherit; color: inherit; }
+header { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.brand { font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+.brand small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.forms { display: flex; gap: 2px; background: var(--hover); border-radius: 8px; padding: 3px; }
+.forms button { border: 0; background: transparent; padding: 5px 11px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+.forms button[aria-pressed="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.tools { display: flex; gap: 6px; margin-left: auto; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:disabled { opacity: .45; cursor: default; }
+#status { color: var(--muted); font-size: 12px; }
+.app { display: grid; grid-template-columns: 300px minmax(0, 1fr) 300px; min-height: 0; }
+aside, #inspector { background: var(--panel); border-right: 1px solid var(--line); min-height: 0; overflow: auto; }
+#inspector { border-right: 0; border-left: 1px solid var(--line); padding: 14px 16px; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.tabs button { flex: 1; border: 0; background: none; padding: 9px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+#find { padding: 10px 12px; }
+#q { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; }
+#count { color: var(--muted); font-size: 12px; margin: 8px 2px 4px; }
+#results { list-style: none; margin: 0; padding: 0; }
+.result { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.result:hover { background: var(--hover); }
+.result.is-current { background: var(--hover); box-shadow: inset 3px 0 0 var(--accent); }
+.r-name { display: block; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+.r-where { display: block; color: var(--muted); font-size: 11.5px; }
+#map { padding: 12px 14px; }
+#map h3 { margin: 4px 0 2px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 15px; }
+#map h4 { margin: 14px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.map-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#map ul { list-style: none; margin: 0; padding: 0; }
+.link { border: 0; background: none; padding: 2px 0; cursor: pointer; text-align: left; color: var(--accent); font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
+.hint { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+.gcallers { display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; font-size: 12.5px; color: var(--muted); margin-top: 4px; min-width: 0; }
+.gcallers .link { font-size: 12.5px; }
+#gsource { color: var(--muted); }
+.map-rank { list-style: none; margin: 0; padding: 0; }
+#convert { padding: 10px 12px; display: grid; gap: 8px; }
+#bptext { width: 100%; min-height: 160px; resize: vertical; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg);
+  color: var(--fg); font: 11.5px/1.4 "JetBrains Mono", Consolas, monospace; }
+#bpout { display: grid; gap: 6px; font-size: 12.5px; min-width: 0; }
+#bpout .err { color: var(--str); margin: 0; overflow-wrap: anywhere; }
+#bpout ul { list-style: none; margin: 0; padding: 0; }
+#bpout .what { margin: 0; overflow-wrap: anywhere; }
+main { display: grid; grid-template-rows: auto 1fr; min-height: 0; min-width: 0; }
+.ghead { padding: 12px 18px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
+#gname { font-family: "JetBrains Mono", Consolas, monospace; font-size: 17px; font-weight: 600; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.gmeta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+#gsig { font-family: "JetBrains Mono", Consolas, monospace; }
+#gdoc { margin: 6px 0 0; font-size: 13px; max-width: 95ch; }
+.canvas { min-height: 0; overflow: auto; position: relative; }
+/* the Blueprint canvas */
+.bp { position: absolute; inset: 0; background: var(--canvas); cursor: grab; touch-action: none; }
+.bp.dragging { cursor: grabbing; }
+.bp-svg { width: 100%; height: 100%; display: block; font-family: "JetBrains Mono", Consolas, monospace; font-variant-ligatures: none; font-size: 12px; }
+.bp-bg { fill: url(#grid); }
+.bp-grid { fill: none; stroke: var(--grid); stroke-width: 1; }
+.bp-body { fill: var(--node); stroke: var(--node-line); }
+.bp-title { fill: var(--c-other); }
+.cat-flow .bp-title { fill: var(--c-flow); } .cat-call .bp-title { fill: var(--c-call); } .cat-pure .bp-title { fill: var(--c-pure); }
+.cat-set .bp-title { fill: var(--c-set); } .cat-math .bp-title { fill: var(--c-math); } .cat-make .bp-title { fill: var(--c-make); }
+.cat-cast .bp-title { fill: var(--c-cast); } .cat-lambda .bp-title { fill: var(--c-lambda); } .cat-fail .bp-title { fill: var(--c-fail); }
+.tier-x .bp-body { stroke-dasharray: 5 3; stroke: #c9a24e; }
+.tier-i .bp-body { stroke: #d86b3a; stroke-width: 2; }
+.bp-title-text { fill: #fff; font-weight: 600; font-size: 12.5px; }
+.bp-sub { fill: var(--node-muted); font-size: 11px; }
+.bp-pin-label { fill: var(--node-fg); }
+.bp-pin-label.end { text-anchor: end; }
+.bp-pin-label.exec { fill: #fff; }
+.bp-pin-value { fill: #f2d48a; }
+.bp-exec-pin { fill: #fff; }
+.bp-pin { fill: none; stroke-width: 2; }
+.bp-pin.wired { fill: currentColor; }
+.ty-bool { color: var(--t-bool); stroke: var(--t-bool); } .ty-int { color: var(--t-int); stroke: var(--t-int); } .ty-float { color: var(--t-float); stroke: var(--t-float); }
+.ty-string { color: var(--t-string); stroke: var(--t-string); } .ty-array { color: var(--t-array); stroke: var(--t-array); }
+.ty-object { color: var(--t-object); stroke: var(--t-object); } .ty-any { color: var(--t-any); stroke: var(--t-any); }
+.bp-wire { fill: none; }
+.bp-wire.exec { stroke: #f4f4f4; stroke-width: 2.4; }
+.bp-wire.data { stroke-width: 1.8; opacity: .9; }
+.bp-wire.read { stroke: #c9cdd6; stroke-width: 1.4; stroke-dasharray: 6 4; opacity: .75; }
+.bp-node { cursor: pointer; }
+.bp-node.has-def .bp-title-text { text-decoration: underline; text-decoration-color: rgba(255,255,255,.45); }
+.bp-node:focus { outline: none; }
+.bp-node.is-selected .bp-body, .bp-node:focus .bp-body { stroke: var(--sel); stroke-width: 2.5; stroke-dasharray: none; }
+.bp-chip rect { fill: #2a3240; stroke: #6e7f99; }
+.bp-chip text { fill: #cfe0ff; font-size: 11.5px; }
+.bp-chip { cursor: pointer; }
+/* blocks */
+.blocks { padding: 16px 18px 40px; display: flex; flex-direction: column; gap: 6px; max-width: 1200px; }
+.stack { display: flex; flex-direction: column; gap: 6px; }
+.block { border: 1px solid var(--line); border-left: 5px solid var(--c-other); border-radius: 8px; background: var(--panel); padding: 6px 10px; }
+.block.quiet { color: var(--muted); border-left-color: var(--line); font-size: 12px; }
+.block.cat-flow { border-left-color: var(--c-flow); } .block.cat-call { border-left-color: var(--c-call); } .block.cat-set { border-left-color: var(--c-set); }
+.block.cat-fail { border-left-color: var(--c-fail); } .block.cat-lambda { border-left-color: var(--c-lambda); } .block.cat-pure { border-left-color: var(--c-pure); }
+.block.is-selected { outline: 2px solid var(--sel); }
+.block-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.block-title { font-weight: 600; }
+.block-note { color: var(--muted); font-size: 12px; margin-top: 4px; white-space: pre-wrap; border-left: 2px solid var(--line); padding-left: 8px; }
+.arm { margin: 8px 0 2px 6px; padding-left: 10px; border-left: 2px dashed var(--line); }
+.arm-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+.pill { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; border-radius: 999px; padding: 1px 8px; font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px; background: var(--hover); border: 1px solid var(--line); max-width: 100%; overflow-wrap: anywhere; }
+.pill.term { background: var(--code-bg); }
+.pill.empty { color: var(--muted); }
+.pill-title { font-weight: 600; }
+.pill-sep { color: var(--muted); font-size: 11px; }
+.pill.cat-call, .pill.cat-pure { box-shadow: inset 3px 0 0 var(--c-pure); } .pill.cat-math { box-shadow: inset 3px 0 0 var(--c-math); }
+.pill.is-selected { outline: 2px solid var(--sel); }
+/* text projections */
+.code { padding: 14px 18px 40px; }
+.code pre, .pseudo { font-family: "JetBrains Mono", Consolas, monospace; font-variant-ligatures: none; font-size: 12.5px; line-height: 1.55; background: var(--code-bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0; }
+.pseudo .line { white-space: pre-wrap; cursor: pointer; border-radius: 4px; }
+.pseudo .line:hover { background: var(--hover); }
+.pseudo .line.is-selected { background: color-mix(in srgb, var(--sel) 28%, transparent); }
+.banner { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; max-width: 100ch; }
+.kw { color: var(--kw); } .str { color: var(--str); } .num { color: var(--num); } .cmt { color: var(--cmt); font-style: italic; }
+#inspector h3 { margin: 0 0 8px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 15px; overflow-wrap: anywhere; }
+#inspector dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0 0 10px; font-size: 12.5px; }
+#inspector dt { color: var(--muted); }
+#inspector dd { margin: 0; overflow-wrap: anywhere; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+#inspector blockquote { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--line); color: var(--muted); font-size: 12.5px; white-space: pre-wrap; }
+#inspector details { margin-top: 12px; font-size: 12px; }
+#inspector code { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11.5px; background: var(--code-bg); padding: 6px; border-radius: 6px; margin-top: 4px; }
+@media (max-width: 1100px) { .app { grid-template-columns: 260px minmax(0, 1fr); } #inspector { display: none; } }
+@media (max-width: 720px) { .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 40vh 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--line); }
+  header { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Blueprint View <small>C# and Blueprints as one graph language · each graph says what it was read from</small></div>
+  <div class="forms" role="group" aria-label="Read this graph as">
+    <button data-form="blueprint">Blueprint</button>
+    <button data-form="blocks">Blocks</button>
+    <button data-form="pseudo">Pseudo-code</button>
+    <button data-form="cs">C#</button>
+    <button data-form="cpp">C++</button>
+  </div>
+  <div class="tools">
+    <button class="btn" id="back" disabled title="Back to the graph you came from">◀ Back</button>
+    <button class="btn" id="fit" title="Fit the Blueprint graph in view">Fit</button>
+  </div>
+  <span id="status">loading…</span>
+</header>
+<div class="app">
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-panel="find" aria-selected="true">Find</button>
+      <button role="tab" data-panel="map" aria-selected="false">Map</button>
+      <button role="tab" data-panel="convert" aria-selected="false">From Blueprint</button>
+    </div>
+    <div id="find">
+      <input id="q" type="search" placeholder="Find a method: damage calc, BuildTree…" aria-label="Find a graph by name" autocomplete="off">
+      <div id="count"></div>
+      <ul id="results"></ul>
+    </div>
+    <div id="map" hidden><div id="mapbox"></div></div>
+    <div id="convert" hidden>
+      <p class="hint">Select nodes in Unreal's Blueprint editor, copy them (Ctrl+C) and paste here; an exported .t3d works too. They are read as graphs and open in every form above.</p>
+      <textarea id="bptext" spellcheck="false" aria-label="Blueprint text to convert" placeholder="Begin Object Class=/Script/BlueprintGraph.K2Node_..."></textarea>
+      <button class="btn" id="bpgo">Convert to code</button>
+      <div id="bpout" aria-live="polite"></div>
+    </div>
+  </aside>
+  <main>
+    <div class="ghead">
+      <h1 id="gname">…</h1>
+      <div class="gmeta"><span id="gplace"></span><span id="gsig"></span><span id="gstats"></span><span id="gsource"></span></div>
+      <div class="gcallers" id="gcallers"></div>
+      <p id="gdoc" hidden></p>
+    </div>
+    <div id="canvas" class="canvas"></div>
+  </main>
+  <section id="inspector" aria-label="Selected node"></section>
+</div>
+<script>
+  // load in order, each with a stamp, so a reload always runs the current pl.js (a cached copy once showed an old layout)
+  (function () {
+    var v = String(Date.now()), files = ['data/index.js', 'pl.js', 'bp_ops.js', 'bp_self.js', 'bp.js', 'view.js'];
+    window.BPV_STAMP = v;
+    (function next(i) {
+      if (i >= files.length) return;
+      var s = document.createElement('script');
+      s.src = files[i] + '?v=' + v;
+      s.onload = function () { next(i + 1); };
+      s.onerror = function () { document.getElementById('status').textContent = 'Could not load ' + files[i]; };
+      document.body.appendChild(s);
+    })(0);
+  })();
+</script>
+</body>
+</html>
