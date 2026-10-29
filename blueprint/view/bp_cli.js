@@ -97,18 +97,29 @@ function convertAll(inDir, outDir) {
     for (const [c, n] of Object.entries(rep.notCode)) total.notCode[c] = (total.notCode[c] || 0) + n;
     total.notes += rep.notes.length;
   }
-  // where these graphs came from, for the page's header (pl_cli.js bundle reads it): the engine's version READ from its
-  // Build.version, or said to be unread - never guessed from a folder name
+  // where these graphs came from, for the page's header (pl_cli.js bundle reads it). A paste set says so from its manifest
+  // (SOURCES.json): pasted texts, the site they were pasted on and the engine version each page states - no export of this install's
+  // templates, whatever UE_ROOT names. The templates say the engine's version READ from its Build.version, or that it was not read -
+  // never guessed from a folder name
   // UE_ROOT names the install (the folder holding Engine/), as every tool here reads it: unset, the version is said to be unread
-  const engine = process.env.UE_ROOT ? path.join(process.env.UE_ROOT, 'Engine') : null;
-  let version = engine ? 'an engine version not read (no ' + engine.replace(/\\/g, '/') + '/Build/Build.version)' : 'an engine version not read (UE_ROOT not set)';
-  try {
-    if (!engine) throw new Error('UE_ROOT not set');
-    const v = JSON.parse(fs.readFileSync(path.join(engine, 'Build', 'Build.version'), 'utf8'));
-    version = 'Unreal Engine ' + v.MajorVersion + '.' + v.MinorVersion + '.' + v.PatchVersion + ' (changelist ' + v.Changelist + ')';
-  } catch (e) { /* the sentence above says it was not read */ }
+  let source;
+  if (fs.existsSync(manifest)) {
+    const pastes = JSON.parse(readText(manifest)).pastes;
+    const each = (f) => [...new Set(pastes.map(f))].join(', ');
+    source = total.files + ' Blueprint text' + (total.files === 1 ? '' : 's') + ' pasted on ' + each((p) => new URL(p.url).host) + ' from Unreal Engine ' + each((p) => p.ue) +
+      '; the manifest SOURCES.json lists each one\'s page and hash';
+  } else {
+    const engine = process.env.UE_ROOT ? path.join(process.env.UE_ROOT, 'Engine') : null;
+    let version = engine ? 'an engine version not read (no ' + engine.replace(/\\/g, '/') + '/Build/Build.version)' : 'an engine version not read (UE_ROOT not set)';
+    try {
+      if (!engine) throw new Error('UE_ROOT not set');
+      const v = JSON.parse(fs.readFileSync(path.join(engine, 'Build', 'Build.version'), 'utf8'));
+      version = 'Unreal Engine ' + v.MajorVersion + '.' + v.MinorVersion + '.' + v.PatchVersion + ' (changelist ' + v.Changelist + ')';
+    } catch (e) { /* the sentence above says it was not read */ }
+    source = total.files + ' Blueprints of the ' + version + ' templates, exported headless by tools/export_templates.ps1';
+  }
   fs.writeFileSync(path.join(outDir, 'SOURCE.txt'), '# where these graphs came from (view/bp_cli.js convert); pl_cli.js bundle shows it in the page\n' +
-    'source ' + total.files + ' Blueprints of the ' + version + ' templates, exported headless by tools/export_templates.ps1\n');
+    'source ' + source + '\n');
   const islands = Object.values(total.islands).reduce((a, b) => a + b, 0);
   console.log('bp convert: ' + total.files + ' Blueprints, ' + total.graphs + ' graphs (the ones each Blueprint lists as its own), ' + total.methods +
     ' methods, ' + total.printed + ' printed as C#, C++ and pseudo-code; ' + total.nodes + ' nodes (' + total.comments + ' comment boxes beside them), ' +

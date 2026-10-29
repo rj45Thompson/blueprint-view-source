@@ -27,6 +27,9 @@
   #cmd { flex: 1 1 240px; display: flex; align-items: center; gap: 6px; padding: 6px 8px; min-width: 180px; }
   #cmd input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--fg); font: 13px var(--mono); }
   #cmd button, .btn { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font: 12px var(--sans); cursor: pointer; white-space: nowrap; }
+  a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+  /* the whole Blueprint as code: the one link here that leaves the city, so it is the one marked to be found */
+  #allcode { border-color: var(--accent); color: var(--accent); font-weight: 600; }
   #cmd button:hover, .btn:hover { border-color: var(--accent); }
   #mic[data-on="1"] { background: #5a1420; border-color: var(--bad); }
   #badge { padding: 6px 10px; font: 11px var(--mono); color: var(--dim); white-space: nowrap; flex: 0 0 auto; }
@@ -147,6 +150,7 @@
   <button id="panels" class="btn glass" title="show or hide the classes and layers panels">Panels</button>
   <button id="gamebtn" class="btn glass" hidden title="play the game this Blueprint is, running its converted code">Play</button>
   <button id="open2d" class="btn glass" title="the selected graph's paste as Unreal's Blueprint editor draws it">Unreal 2D</button>
+  <a id="allcode" class="btn glass" hidden target="_top" title="the whole Blueprint as code: every class, field and method, not just one node">Whole code</a>
   <div id="badge" class="glass">renderer: starting</div>
 </div>
 <div id="layers" class="glass"></div>

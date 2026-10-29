@@ -119,8 +119,10 @@
   /** the graph's entry node: the event or the function itself, named as its island's title names it (not the qualified
    *  FrankBP.SetLockOnTarget the converter keys it by, which left the name itself too small to read on the box) */
   function entryFace(G) {
-    return { title: String(G.title || G.alias), tag: G.kind + (G.rate ? ', ' + G.rate.hz + ' times a second' : ''), lines: [], statement: true };
+    return { title: String(G.title || G.alias), tag: G.kind + (G.rate ? ', ' + G.rate.hz + ' times a second' : G.runs ? ', ' + runsShort(G.runs) : ''), lines: [], statement: true };
   }
+  // how often a graph with no timer runs, as scene_cli GraphRuns READ it: the engine's Tick, or a Delay loop's fastest period
+  const runsShort = (r) => (r.by === 'tick' ? 'once a frame' : 'loops at most every ' + r.every + ' s');
   const typeOf = (G, id) => { const n = G.nodes.find((x) => x.id === id); return n && n.t ? n.t : ''; };
 
   /** what a hover says: one line naming the part */
@@ -135,7 +137,7 @@
       case 'graph': {
         const G = graphOf(D, w.alias);
         if (!G) break;
-        return (G.title || G.alias) + '  (' + G.kind + ' in ' + G.cls + ', ' + G.nodes.length + ' nodes' + (G.rate ? ', runs ' + G.rate.hz + ' times a second' : '') + ')';
+        return (G.title || G.alias) + '  (' + G.kind + ' in ' + G.cls + ', ' + G.nodes.length + ' nodes' + (G.rate ? ', runs ' + G.rate.hz + ' times a second' : G.runs ? ', ' + G.runs.said : '') + ')';
       }
       case 'class': {
         const c = classOf(D, w.cls);
@@ -190,9 +192,11 @@
       }
       case 'parent': {
         const c = classOf(D, w.cls);
+        // a member with a header line is the engine's, on the parent or above; one marked its own is a component or variable the
+        // Blueprint adds itself (oo.js ParentReading) - never shown as the engine's
         return h3(c.parent + ' (engine)') + '<div class="chain">The parent of ' + esc(w.cls) + ' is read, not drawn by hand: ' + esc(w.cls) +
-          ' uses these on itself, and the engine declares them on ' + esc(c.parent) + ' or above.</div>' +
-          kv((c.uses || []).map((u) => [u.name, esc((u.declared ? u.declared.cls + ' at ' + u.declared.at : 'declared where: not read') + ' - used at ' + (u.where || []).join(', '))]));
+          ' uses these on itself; the engine declares the ones given a header line on ' + esc(c.parent) + ' or above, and the rest say whose they are.</div>' +
+          kv((c.uses || []).map((u) => [u.name, esc((u.declared ? u.declared.cls + ' at ' + u.declared.at : u.why || 'declared where: not read') + ' - used at ' + (u.where || []).join(', '))]));
       }
       case 'call': {
         const c = D.calls[w.i], G = graphOf(D, c.to);

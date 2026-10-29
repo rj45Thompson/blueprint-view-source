@@ -815,7 +815,8 @@ spaces:
     ReduceLives#s1:else:
     - AS-18
     ReduceLives#s3:then:
-      excluded: 'the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no wire), and the macro declares it with no default,
+        which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#s3:else:
     - AS-18
     ReduceLives#s5:then:
@@ -914,27 +915,38 @@ spaces:
     - AS-9
     - IR-AS-2
     ReduceLives#P1:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P2:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P3:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P4:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P5:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P6:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P7:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P8:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P9:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P10:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P11:
-      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default (false) in the paste, so its then side never runs (StandardMacros.t3d:340)'
+      excluded: 'takes ReduceLives#s3:then, which cannot happen: the test is the literal false: the DoOnce''s Start Closed pin is left at its default in the paste (BP_Character_Lives.t3d:59: no value, no
+        wire), and the macro declares it with no default, which leaves a bool false (StandardMacros.t3d:715-726): its then side never runs'
     ReduceLives#P12:
     - AS-18
     - AS-19

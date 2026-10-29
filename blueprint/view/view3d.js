@@ -333,14 +333,16 @@ function buildIsland(G, x0, z0, w, h) {
   const I = { G, x0, z0, w, h, nodes: new Map() };
   islands.set(G.alias, I);
   const graph = { kind: 'graph', alias: G.alias };
-  const hot = !!G.rate;
+  // hot: a graph that runs often - a timer's rate (G.rate), or the engine's Tick and a Delay loop (G.runs, scene_cli.js GraphRuns)
+  const hot = !!(G.rate || G.runs);
   const slab = new THREE.Mesh(new RoundedBoxGeometry(w, 0.4, h, 4, 0.5), stdMat('#141e33', hot ? '#ff3b2f' : '#1d3d72', hot ? 0.0 : 0.18, { roughness: 0.55, metalness: 0.25 }));
   slab.position.set(x0 + w / 2, -0.2, z0 + h / 2);
   slab.receiveShadow = true;
   world.add(ground(slab, graph));
   I.slab = slab;
   if (hot) {
-    // a graph a timer runs swells and burns: the rim pulses at the rate the timer states (READ from its arguments)
+    // a graph that runs often swells and burns: a timer's at the rate it states, a Tick or a Delay loop as its data says (READ, never a
+    // rate the paste does not hold)
     const rim = new THREE.Mesh(new RoundedBoxGeometry(w + 0.6, 0.2, h + 0.6, 4, 0.6), new THREE.MeshStandardNodeMaterial({ color: new THREE.Color('#40100c') }));
     rim.material.emissiveNode = color('#ff3b2f').mul(sin(time.mul(9.0)).mul(0.5).add(0.6).mul(2.2));
     rim.position.set(x0 + w / 2, -0.38, z0 + h / 2);
@@ -348,8 +350,8 @@ function buildIsland(G, x0, z0, w, h) {
     I.rim = rim;
     I.rimPhase = Math.random() * 6;
   }
-  const t = labelSprite([G.title || G.alias, (G.kind === 'function' ? 'function' : 'event') + (G.rate ? '  -  runs ' + G.rate.hz + ' times a second (a timer, ' + G.rate.from + ')' : '') + '  -  ' + G.cls],
-    { size: Math.min(13, Math.max(7, w * 0.5)), font: 60, accent: G.rate ? '#ff5a4f' : KIND.event });
+  const t = labelSprite([G.title || G.alias, (G.kind === 'function' ? 'function' : 'event') + (G.rate ? '  -  runs ' + G.rate.hz + ' times a second (a timer, ' + G.rate.from + ')' : G.runs ? '  -  ' + G.runs.said : '') + '  -  ' + G.cls],
+    { size: Math.min(13, Math.max(7, w * 0.5)), font: 60, accent: hot ? '#ff5a4f' : KIND.event });
   t.position.set(x0 + Math.min(w, 13) / 2 + 0.2, 2.6, z0 - 0.6);
   layers.labels.add(solid(t, graph));
   I.title = t;
@@ -359,11 +361,11 @@ function buildIsland(G, x0, z0, w, h) {
   const entry = new THREE.Mesh(new RoundedBoxGeometry(1.5, 0.34, 0.9, 3, 0.12), stdMat(KIND.event, KIND.event, 0.6));
   entry.position.set(x0 + 0.65, 0.17, ez);
   entry.castShadow = true;
-  const ef = nodeFace(C.entryFace(G), 1.5, 0.9, G.rate ? '#ff5a4f' : KIND.event);
+  const ef = nodeFace(C.entryFace(G), 1.5, 0.9, hot ? '#ff5a4f' : KIND.event);
   ef.position.y = 0.17 + 0.004;
   entry.add(ef);
   world.add(solid(entry, graph));
-  I.entry = { mesh: entry, pos: entry.position.clone(), bw: 1.5, top: 0.17, title: C.entryFace(G).title, col: G.rate ? '#ff5a4f' : KIND.event, titleH: ef.userData.titleH };
+  I.entry = { mesh: entry, pos: entry.position.clone(), bw: 1.5, top: 0.17, title: C.entryFace(G).title, col: hot ? '#ff5a4f' : KIND.event, titleH: ef.userData.titleH };
   for (const n of G.nodes) {
     const isStmt = n.id[0] === 's';
     const what = { kind: 'node', alias: G.alias, id: n.id };
@@ -403,7 +405,7 @@ function buildIsland(G, x0, z0, w, h) {
     if (wv.kind === 'exec') {
       const a = new THREE.Vector3(from.pos.x + from.bw / 2, 0.5, from.pos.z), b = new THREE.Vector3(to.pos.x - to.bw / 2, 0.5, to.pos.z);
       const k = Math.max(0.6, Math.abs(b.x - a.x) * 0.45);
-      const m = tube([a, new THREE.Vector3(a.x + k, 1.15, a.z), new THREE.Vector3(b.x - k, 1.15, b.z), b], 0.034, execMat(G.rate ? G.rate.hz : 0), 40);
+      const m = tube([a, new THREE.Vector3(a.x + k, 1.15, a.z), new THREE.Vector3(b.x - k, 1.15, b.z), b], 0.034, execMat(G.rate ? G.rate.hz : (G.runs && G.runs.hz) || 0), 40);
       layers.exec.add(line(m, what));
       (I.execWires || (I.execWires = [])).push(m);
     } else {
@@ -552,7 +554,7 @@ function flyToIsland(alias) {
 }
 const keys = new Set();
 window.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') { if (e.key === 'Enter' && e.target.id === 'cmdin') runCommand(e.target.value); return; }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') { if (e.key === 'Enter' && e.target.id === 'cmdin') runCommand(e.target.value, 'typed'); return; }
   // while a game runs its keys are the game's (W A S D fly the camera otherwise): held, and pressed once per press; its pause key pauses
   const gk = e.key.toLowerCase();
   if (live.G && live.gameKeys.has(gk)) { e.preventDefault(); if (!e.repeat) live.pressed.add(gk); live.keys.add(gk); return; }
@@ -746,7 +748,8 @@ function renderDetails() {
   const n = selected.n;
   const tabs = ['blueprint', 'code', 'pseudo', 'graph code'].map((t) => '<button class="btn" data-tab="' + t + '" data-on="' + (codeTab === t ? 1 : 0) + '">' + t + '</button>').join('');
   let body = '<h3>' + esc(G.title || G.alias) + '</h3><div class="kv"><span>class</span><span>' + esc(G.cls) + '</span><span>graph</span><span>' + esc(G.alias) + ' (' + esc(G.kind) + ')</span>' +
-    (G.rate ? '<span>runs</span><span style="color:var(--bad)">' + G.rate.hz + ' times a second, by a timer at ' + esc(G.rate.from) + '</span>' : '') + '</div>';
+    (G.rate ? '<span>runs</span><span style="color:var(--bad)">' + G.rate.hz + ' times a second, by a timer at ' + esc(G.rate.from) + '</span>' : '') +
+    (G.runs ? '<span>runs</span><span style="color:var(--bad)">' + esc(G.runs.said) + '</span>' : '') + '</div>';
   if (n) {
     const stmt = n.id[0] === 's';
     // an expression is cited through the statement that takes its value: its chain is that statement's, said as such
@@ -890,7 +893,12 @@ function showStep() {
   $('scrub').value = replay.k;
 }
 function stepReplay(d) { if (!replay.path) return; replay.k = Math.max(0, Math.min(replay.path.stmts.length - 1, replay.k + d)); replay.t = 0; showStep(); }
-function togglePlay() { if (!replay.path) { const first = D.graphs[0]; fillPaths(first.alias); } replay.playing = !replay.playing; $('play').textContent = replay.playing ? 'Pause' : 'Play'; if (replay.playing && replay.k >= replay.path.stmts.length - 1) { replay.k = 0; showStep(); } }
+function togglePlay() {
+  // no path chosen: the selected graph's first, else the first graph's - and none at all is said, never played (measured 10-29: "play
+  // 2" on a one-path graph left no path, and Play threw on it)
+  if (!replay.path) { if (!replay.alias) fillPaths(D.graphs[0].alias); setPath(0); }
+  if (!replay.path) { toast('no path to replay here'); return; }
+  replay.playing = !replay.playing; $('play').textContent = replay.playing ? 'Pause' : 'Play'; if (replay.playing && replay.k >= replay.path.stmts.length - 1) { replay.k = 0; showStep(); } }
 $('pathsel').addEventListener('change', (e) => setPath(+e.target.value));
 $('scrub').addEventListener('input', (e) => { replay.k = +e.target.value; replay.t = 0; showStep(); });
 $('play').addEventListener('click', togglePlay);
@@ -898,6 +906,11 @@ $('prev').addEventListener('click', () => stepReplay(-1));
 $('next').addEventListener('click', () => stepReplay(1));
 
 // ------------------------------------------------------------------------------------------------ commands, typed or spoken
+// A command reaches the city two ways, typed into the bar or said to the Mic, and both go through heard() and parse(): heard() turns
+// what a recognizer wrote into the command a person meant, parse() reads it into one action, and runCommand() does it and says
+// what it did. heard()'s rewrites are each one a recognizer was MEASURED making on this page (tools/dictation_check.py,
+// results/DICTATION.md: Chrome 156 wrote "fly to" as "flight" and Random_Roam as "random room"), or plain form: case,
+// punctuation, number words. A name is matched on its letters and digits alone, so Random_Roam is reachable by saying it.
 let ragIndex = null;
 function rag() {
   if (ragIndex || !window.RAG) return ragIndex;
@@ -907,71 +920,172 @@ function rag() {
   ragIndex = window.RAG.index(trace, { classes: D.classes }, { usecases: D.usecases, requirements: D.requirements, answers: answers, asks: D.asks });
   return ragIndex;
 }
+/** a name as its letters and digits, lower case: "Random_Roam", "random roam" and "RandomRoam" are one name to a listener */
+const bare = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+/** a name the way a person says it: words split at case changes and underscores, a bracketed qualifier dropped
+ *  ("OnSeePawn(PawnSensing)" -> "on see pawn") - what the city offers as an example to say */
+const sayable = (s) => String(s || '').replace(/\(.*?\)/g, ' ').replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
+/** heard - what was typed or recognized, in the form parse() reads */
+function heard(raw) {
+  let c = String(raw || '').toLowerCase().replace(/[.,!?;:"]+/g, ' ').replace(/\s+/g, ' ').trim();
+  c = c.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/g, (w) => String(NUMBER_WORDS[w]));
+  // measured (results/DICTATION.md): "fly to distance to Frank" -> "flight distance to Frank", "fly to random roam" -> "flight to random room"
+  c = c.replace(/^flight\s+(?:to\s+)?/, 'fly to ');
+  c = c.replace(/^(?:please\s+)?(?:take me|bring me|jump|zoom in|head)\s+to\s+/, 'fly to ');
+  return c;
+}
+function editDistance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur.push(Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+/** findByName - a part a command names: a graph (by its name, its title or its name as said), the interface, a class, a statement
+ *  (by id or by its text); last, the NEAREST name, for a word a recognizer heard slightly wrong - within a fifth of the name's letters,
+ *  and only when no other name is as near. A near match is said as one, so a person sees what was taken */
 function findByName(s) {
-  const t = s.toLowerCase().replace(/\s+/g, '');
-  const g = D.graphs.find((G) => G.alias.toLowerCase() === t) || D.graphs.find((G) => G.alias.toLowerCase().includes(t) || (G.title || '').toLowerCase().replace(/\s+/g, '').includes(t));
+  const t = bare(s);
+  if (!t) return null;
+  const g = D.graphs.find((G) => bare(G.alias) === t || bare(sayable(G.alias)) === t) || D.graphs.find((G) => bare(G.alias).includes(t) || bare(G.title).includes(t));
   if (g) return { alias: g.alias };
-  // the interface and the classes are parts too: "fly to LockOnInterface", "fly to FrankBP"
-  const iface = D.interfaces.find((x) => x.name.toLowerCase() === t);
+  const iface = D.interfaces.find((x) => bare(x.name) === t);
   if (iface) return { key: C.keyOf({ kind: 'interface', name: iface.name }) };
-  const cls = [...new Set(D.graphs.map((G) => G.cls))].find((x) => x.toLowerCase() === t);
+  const cls = [...new Set(D.graphs.map((G) => G.cls))].find((x) => bare(x) === t);
   if (cls) return { key: C.keyOf({ kind: 'class', cls: cls }) };
-  for (const G of D.graphs) for (const n of G.nodes) if ((G.alias + '#' + n.id).toLowerCase() === t) return { alias: G.alias, id: n.id };
-  for (const G of D.graphs) for (const n of G.nodes) if (n.id[0] === 's' && n.text.toLowerCase().replace(/\s+/g, '').includes(t)) return { alias: G.alias, id: n.id };
+  for (const G of D.graphs) for (const n of G.nodes) if (bare(G.alias + '#' + n.id) === t) return { alias: G.alias, id: n.id };
+  for (const G of D.graphs) for (const n of G.nodes) if (n.id[0] === 's' && bare(n.text).includes(t)) return { alias: G.alias, id: n.id };
+  const all = D.graphs.map((G) => ({ k: bare(G.alias), label: G.alias, hit: { alias: G.alias } }))
+    .concat(D.interfaces.map((x) => ({ k: bare(x.name), label: x.name, hit: { key: C.keyOf({ kind: 'interface', name: x.name }) } })))
+    .concat([...new Set(D.graphs.map((G) => G.cls))].map((x) => ({ k: bare(x), label: x, hit: { key: C.keyOf({ kind: 'class', cls: x }) } })));
+  const scored = all.map((x) => ({ x: x, d: editDistance(t, x.k) })).sort((a, b) => a.d - b.d);
+  const best = scored[0], next = scored.find((y) => y.x.label !== best.x.label);
+  if (best && best.d <= Math.max(1, Math.floor(best.x.k.length / 5)) && (!next || next.d > best.d)) return Object.assign({ near: best.x.label }, best.x.hit);
   return null;
 }
-function runCommand(raw) {
-  const c = String(raw || '').trim();
-  if (!c) return;
+/** what to say here: this set's own names, so an example never names a graph another set has */
+function examples() {
+  const G0 = D.graphs.find((G) => G.kind === 'event') || D.graphs[0];
+  return ['fly to ' + sayable(G0.alias), 'play 2', 'next', 'questions', 'show the code', 'whole code', 'ask what ' + sayable(G0.alias) + ' does'];
+}
+/** parse - one command into one action, or null; nothing runs here, so a recognizer's alternatives can be tried in turn */
+function parse(raw) {
+  const c = heard(raw);
   let m;
-  if ((m = /^(?:fly|go|show|open|find)\s+(?:to\s+)?(.+)$/i.exec(c))) {
-    const hit = findByName(m[1]);
-    if (!hit) return toast('nothing named "' + m[1] + '"');
-    if (hit.key) { goKey(hit.key); return toast('flying to ' + hit.key.split('|').slice(1).join(' ')); }
+  if (!c) return null;
+  if (/^(?:show |open |read )?(?:me )?(?:the )?(?:whole|entire|full|all(?: the)?) (?:blueprint )?(?:as )?code\b/.test(c)) return { kind: 'whole code' };
+  if (/^(?:go |step )?(?:back|previous|backward|backwards)\b/.test(c)) return { kind: 'step', d: -1 };
+  if (/^(?:go |step )?(?:next|forward)\b/.test(c)) return { kind: 'step', d: 1 };
+  if (/^(?:pause|stop)\b/.test(c)) return { kind: 'pause' };
+  if (/^(?:play|replay|run)\b/.test(c)) return { kind: 'play', n: (m = /(\d+)/.exec(c)) ? +m[1] : null };
+  if (/^(?:show |open )?(?:me )?(?:the )?(?:code|c#|c sharp|csharp)(?=\s|$)/.test(c)) return { kind: 'tab', tab: 'graph code' };
+  if (/^(?:show |open )?(?:me )?(?:the )?(?:blueprint|blue print|nodes)\b/.test(c)) return { kind: 'tab', tab: 'blueprint' };
+  if (/^(?:show |open )?(?:me )?(?:the )?pseudo/.test(c)) return { kind: 'tab', tab: 'pseudo' };
+  if (/^(?:overview|home|reset|zoom out)\b/.test(c)) return { kind: 'overview' };
+  if (/^(?:show |open |list )?(?:me )?(?:the )?(?:open )?questions\b/.test(c)) return { kind: 'questions' };
+  if (/^(?:ask|why|what|how|which|where|who|when|does|is|can)\b/.test(c)) return { kind: 'ask', q: c };
+  if ((m = /^(?:fly|go|show|open|find)\s+(?:me\s+)?(?:to\s+)?(?:the\s+)?(.+)$/.exec(c))) { const hit = findByName(m[1]); return hit ? { kind: 'fly', hit: hit } : { kind: 'unknown name', name: m[1] }; }
+  const hit = findByName(c);
+  return hit ? { kind: 'fly', hit: hit } : null;
+}
+/** runCommand - parse it, do it, and say what was done: a spoken command says what was heard first, so a person can tell a
+ *  recognizer's slip from the city's */
+function runCommand(raw, how) {
+  const said = String(raw || '').trim();
+  if (!said) return;
+  const p = parse(said);
+  const out = act(p);
+  toast((how === 'spoken' ? 'heard "' + said + '": ' : '') + (out || 'not a command: try ' + examples().map((e) => '"' + e + '"').join(', ')));
+}
+function firstStatement(alias) { const G = D.graphs.find((g) => g.alias === alias); const n = G && G.nodes.find((x) => x.id[0] === 's'); return n ? n.id : null; }
+function act(p) {
+  if (!p) return null;
+  if (p.kind === 'unknown name') return 'nothing named "' + p.name + '" here: try ' + examples().slice(0, 1).map((e) => '"' + e + '"').join('');
+  if (p.kind === 'fly') {
+    const hit = p.hit, near = hit.near ? ' (the nearest name)' : '';
+    if (hit.key) { goKey(hit.key); return 'flying to ' + hit.key.split('|').slice(1).join(' ') + near; }
     if (hit.id) { select(hit.alias, hit.id); flyTo(selected.pos, 8); } else { select(hit.alias, null); flyToIsland(hit.alias); }
-    return toast('flying to ' + (hit.id ? hit.alias + '#' + hit.id : hit.alias));
+    return 'flying to ' + (hit.id ? hit.alias + '#' + hit.id : hit.alias) + near;
   }
-  if (/^(play|replay|run)\b/i.test(c)) { const n = /(\d+)/.exec(c); if (n && replay.alias) { setPath(+n[1] - 1); $('pathsel').value = +n[1] - 1; } if (!replay.playing) togglePlay(); return; }
-  if (/^(pause|stop)\b/i.test(c)) { if (replay.playing) togglePlay(); return; }
-  if (/^(next|forward)\b/i.test(c)) return stepReplay(1);
-  if (/^(back|previous)\b/i.test(c)) return stepReplay(-1);
-  if (/^(code|c#|csharp)\b/i.test(c)) { codeTab = 'graph code'; if (selected) renderDetails(); return; }
-  if (/^(blueprint|nodes)\b/i.test(c)) { codeTab = 'blueprint'; if (selected) renderDetails(); return; }
-  if (/^(pseudo)/i.test(c)) { codeTab = 'pseudo'; if (selected) renderDetails(); return; }
-  if (/^(overview|home|reset)\b/i.test(c)) { flight = { t: 0, from: camera.position.clone(), fromT: controls.target.clone(), to: home.pos.clone(), toT: home.target.clone() }; return; }
-  if (/^(questions|open questions)\b/i.test(c)) {
+  if (p.kind === 'whole code') {
+    if (!window.CITY_CODE) return 'this copy of the city has no whole-code page';
+    const url = window.CITY_CODE.replace('{set}', window.CITY_SET || '');
+    // the city is framed by the site's own city page (same origin): the code page replaces that page; a frame the host forbids to
+    // navigate its parent opens the code page in itself
+    try { window.top.location.href = new URL(url, location.href).href; } catch (e) { location.href = url; }
+    return 'opening the whole Blueprint as code';
+  }
+  if (p.kind === 'play') {
+    const ps = replay.alias ? D.paths.filter((x) => x.graph === replay.alias) : [];
+    if (p.n && replay.alias && (p.n < 1 || p.n > ps.length)) return replay.alias + ' has ' + ps.length + ' path' + (ps.length === 1 ? '' : 's') + ': say "play 1"' + (ps.length > 1 ? ' to "play ' + ps.length + '"' : '');
+    if (p.n && replay.alias) { setPath(p.n - 1); $('pathsel').value = p.n - 1; }
+    if (!replay.playing) togglePlay();
+    return 'replaying ' + (replay.path ? replay.path.graph + ' path ' + (+$('pathsel').value + 1) : 'a path');
+  }
+  if (p.kind === 'pause') { if (replay.playing) togglePlay(); return 'paused'; }
+  if (p.kind === 'step') { if (!replay.path) return 'no path to step: fly to a graph and say "play" first'; stepReplay(p.d); return 'step ' + (replay.k + 1) + ' of ' + replay.path.stmts.length; }
+  if (p.kind === 'tab') {
+    codeTab = p.tab;
+    if (!selected) return 'showing ' + p.tab + ' once something is selected: fly to a graph first';
+    // the tabs belong to a statement: a graph selected opens its first one, so the view the command names is on screen
+    if (!selected.n) { const id = firstStatement(selected.alias); if (id) select(selected.alias, id); else renderDetails(); } else renderDetails();
+    return 'showing ' + p.tab + ' for ' + selected.alias + (selected.id ? '#' + selected.id : '');
+  }
+  if (p.kind === 'overview') { flight = { t: 0, from: camera.position.clone(), fromT: controls.target.clone(), to: home.pos.clone(), toT: home.target.clone() }; return 'back to the overview'; }
+  if (p.kind === 'questions') {
     const open = D.questions.filter((q) => q.answers.some((a) => /^IR-/.test(a)));
     $('detailbody').innerHTML = '<h3>Questions only the author can answer: ' + open.length + ' of ' + D.questions.length + '</h3>' + open.map((q) => '<div class="q" data-goq="' + esc(q.refs[0] || '') + '"><b>' + esc(q.id) + '</b> ' + esc(q.text) + '<br>-> ' + q.answers.map(esc).join(', ') + '</div>').join('');
     $('details').dataset.empty = '0';
-    return;
+    return open.length + ' questions only the author can answer';
   }
-  if ((m = /^(?:ask|why|what|how|which|where|who|does|is|can)\b(.*)$/i.exec(c))) {
+  if (p.kind === 'ask') {
     const I = rag();
-    if (!I) return toast('the retrieval layer is not loaded');
+    if (!I) return 'the retrieval layer is not loaded';
+    const c = p.q;
     const r = window.RAG.retrieve(I, c, 3000);
     $('detailbody').innerHTML = '<h3>Asked: ' + esc(c) + '</h3><p style="color:var(--dim);font-size:11px">The pieces of the trace this question touches (view/rag.js) - what a model would be handed instead of the files, about ' + Math.round(r.context.length / 3.3) + ' tokens.</p><pre class="code" style="white-space:pre-wrap">' + esc(r.context) + '</pre>';
     $('details').dataset.empty = '0';
     const firstCode = r.ids.find((id) => /#s\d+$/.test(id));
     if (firstCode) { const [a, id] = firstCode.split('#'); select(a, id); flyTo(selected.pos, 10); renderDetails(); $('detailbody').insertAdjacentHTML('afterbegin', '<h3>Asked: ' + esc(c) + '</h3><pre class="code" style="white-space:pre-wrap;max-height:30vh">' + esc(r.context) + '</pre>'); }
-    return;
+    return 'answered from the trace: ' + r.ids.length + ' pieces';
   }
-  const hit = findByName(c);
-  if (hit) return runCommand('fly to ' + c);
-  toast('not a command: try "fly to LockON", "play 3", "questions", "code", "ask what happens when the target dies"');
+  return null;
 }
-$('go').addEventListener('click', () => runCommand($('cmdin').value));
+$('go').addEventListener('click', () => runCommand($('cmdin').value, 'typed'));
+// the command hint names this set's own graphs, as said (it once named Lock-On's in every set)
+$('cmdin').placeholder = examples().slice(0, 5).join(' / ');
+$('help').insertAdjacentHTML('beforeend', '<br><br><b>Say or type</b> a command: ' + examples().map((e) => '<code>' + esc(e) + '</code>').join(', ') +
+  '. To speak one, press <b>Mic</b> (Chrome, Edge and Safari hear speech; elsewhere the button says so, and typing does the same).');
 $('detailbody').addEventListener('click', (e) => { const q = e.target.closest('[data-goq]'); if (q && q.dataset.goq) { const [a, id] = q.dataset.goq.split('#'); select(a, id); flyTo(selected.pos, 8); } });
+// the whole Blueprint as code, one click away: the site's code page for this set, where the page that hosts the city has one
+if (window.CITY_CODE) { $('allcode').href = window.CITY_CODE.replace('{set}', window.CITY_SET || ''); $('allcode').hidden = false; }
 // dictation: the browser's own speech recognition, where it is offered; said plainly where it is not
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SR) { $('mic').disabled = true; $('mic').title = 'this browser offers no speech recognition: type the command'; $('mic').textContent = 'Mic (n/a)'; }
 else {
   const rec = new SR();
-  rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
-  rec.onresult = (e) => { const said = e.results[0][0].transcript; $('cmdin').value = said; toast('heard: ' + said); runCommand(said); };
-  rec.onerror = (e) => toast('speech: ' + (e.error === 'not-allowed' ? 'the microphone was refused here - type the command' : e.error));
-  rec.onend = () => { $('mic').dataset.on = '0'; };
+  let answered = false;
+  rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 3;
+  // the first alternative the city understands is taken; the recognizer's own first choice when none is
+  rec.onresult = (e) => {
+    answered = true;
+    const alts = [...e.results[0]].map((a) => a.transcript.trim()).filter(Boolean);
+    if (!alts.length) return toast('heard nothing clear: say it again, or type it');
+    const said = alts.find((a) => { const p = parse(a); return p && p.kind !== 'unknown name'; }) || alts[0];
+    $('cmdin').value = said;
+    runCommand(said, 'spoken');
+  };
+  rec.onnomatch = () => { answered = true; toast('did not catch that: say it again, or type it'); };
+  rec.onerror = (e) => { answered = true; toast('speech: ' + (e.error === 'not-allowed' ? 'the microphone was refused here - type the command' : e.error === 'no-speech' ? 'heard nothing - press Mic and speak, or type it' : e.error)); };
+  rec.onstart = () => { answered = false; };
+  rec.onend = () => { $('mic').dataset.on = '0'; if (!answered) toast('heard nothing: press Mic and speak, or type it'); };
   $('mic').addEventListener('click', () => { try { rec.start(); $('mic').dataset.on = '1'; toast('listening...'); } catch (err) { toast('speech: ' + err.message); } });
 }
+
 let toastT = 0;
 function toast(s) { $('toast').textContent = s; $('toast').dataset.on = '1'; toastT = performance.now() + 2600; }
 
@@ -1186,8 +1300,6 @@ function nodeLabels(force) {
 // ------------------------------------------------------------------------------------------------ the loop
 const clock = new THREE.Clock();
 const fwd = new THREE.Vector3(), right = new THREE.Vector3();
-// the command hint names this set's own graphs (it once named Lock-On's in every set)
-$('cmdin').placeholder = 'fly to ' + D.graphs[D.graphs.length > 1 ? 1 : 0].alias + ' / play / questions / code / overview';
 $('sub').textContent = D.meta.title + ' by ' + D.meta.author + ' (UE ' + D.meta.ue + ', blueprintue.com) - ' + D.graphs.length + ' graphs, ' + D.graphs.reduce((s, G) => s + G.nodes.length, 0) + ' nodes, ' + D.paths.length + ' paths, ' + D.questions.length + ' questions';
 /** the part of the screen the panels leave the city: open details cover the right side of a wide screen (a sheet over the lower
  *  middle of a narrow one), a running game the left side (the top of a narrow one) */
